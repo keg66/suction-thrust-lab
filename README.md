@@ -24,6 +24,20 @@ All vehicle and course geometry is built from simple primitives. No manufacturer
 
 ## Demonstrations
 
+These previews include the complete recorded sequence and the appended, labelled **0.25× air-control replay**. Blue arrows show exhaust direction.
+
+### Miniature vehicle · 49.8 seconds
+
+![Miniature vehicle climbs under suction, rolls using bottom jets, recovers and lands, followed by a slow replay.](docs/media/mini-vehicle-roll180.gif)
+
+### Experimental full-size vehicle · 98.4 seconds
+
+![Experimental full-size vehicle performs the suction climb, roll and controlled landing, followed by a slow replay.](docs/media/full-size-roll180.gif)
+
+The full-size hardware and control parameters are experimental assumptions, not production-vehicle specifications. See [preview provenance and regeneration](docs/media/README.md).
+
+### Scenarios
+
 | CLI demo | What it does | Default duration |
 |---|---|---:|
 | `downforce` | Compare floor contact load with the fan off/on | 3 s |
@@ -34,12 +48,13 @@ All vehicle and course geometry is built from simple primitives. No manufacturer
 
 The ceiling example begins inverted with the fan already spinning and zero initial pressure difference. `--cold-fan` demonstrates failure to seal during startup. The lift pulse is not a hover controller. Half-pipe flight uses four underside jets, two front lateral jets and one rear jet. There are no top-mounted jets in those examples. Their instantaneous wrench matrix has rank five; lateral force and yaw torque are coupled.
 
-Recordings are generated locally under `output/videos/suction-thrust-lab/` and are not bundled in the source distribution:
+Full-resolution MP4 recordings are generated locally under `output/videos/suction-thrust-lab/` and are excluded from source/wheel distributions. The two README GIF previews are versioned under `docs/media/` and included in the source distribution. To regenerate the recordings:
 
 ```bash
 MUJOCO_GL=egl python scripts/record_demos.py
 MUJOCO_GL=egl python scripts/record_halfpipe.py --demo halfpipe
 MUJOCO_GL=egl python scripts/record_halfpipe.py --demo full_size
+python scripts/make_readme_gifs.py
 ```
 
 The half-pipe recordings show an overview, a side tracking view, and an axial view during flight. Each combined movie appends a 0.25× replay from edge departure through stable landing. Blue arrows show exhaust direction with a display-only length scale. Recording needs a separate system `ffmpeg` executable with `libx264`, `drawtext`, and `subtitles`, plus a working EGL/OpenGL environment. Neither FFmpeg nor fonts are redistributed here.

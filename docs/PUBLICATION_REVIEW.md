@@ -9,6 +9,10 @@ All three reachable commits and their 32 distinct file-content blobs were inspec
 
 The reviewed current source does not include manufacturer CAD, logos, decals, product photographs or presentation video. User-supplied reference images remain outside the repository. Existing local generated videos/logs are ignored under `output/`; some retain earlier titles and are not included in source/wheel distributions. Their source footage was not imported into the tracked tree. Review any future media separately before publishing it.
 
+## Subsequently added README previews
+
+At the user's request, two project-generated GIF previews are now included under `docs/media/` and selected for the source distribution. They are conversions of the newly branded miniature and experimental full-size recordings made by `scripts/record_halfpipe.py`, with the complete air-control replay retained. They contain only the locally generated primitive scene and telemetry; no manufacturer imagery or presentation footage was used. Source MP4s, CSV and older renderings remain ignored. The GIFs reduce frame rate/color detail without changing the recorded playback speed. See [media provenance and regeneration](media/README.md). This addition changes the earlier text-only publication payload; the earlier audit counts below describe that audit's scope, not the current file count.
+
 ## Security and privacy
 
 The historical scan covered private-key markers, common cloud/GitHub token patterns, credential assignments, personal absolute paths and source email addresses. No secret or personal local path was identified in the tracked current or historical source. Apparent email-like matches in Python matrix multiplication expressions were false positives. Pattern-based scans cannot prove that every possible secret is absent.

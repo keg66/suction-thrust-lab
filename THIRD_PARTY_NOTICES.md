@@ -1,6 +1,6 @@
 # Third-party dependencies and notices
 
-The project source does not vendor dependency source, binary wheels, manufacturer CAD, photographs, footage, logos, decals or fonts. Dependencies are installed separately and retain their own licenses; the project's intended MIT license does not relicense them.
+The project source does not vendor dependency source, binary wheels, manufacturer CAD, third-party photographs or footage, logos, decals or fonts. Dependencies are installed separately and retain their own licenses; the project's intended MIT license does not relicense them.
 
 This review checked installed metadata/license files in the verified environment and official upstream license sources. A different dependency version or platform wheel can contain different bundled components. Preserve the exact upstream license/NOTICE files if you later redistribute those components.
 
@@ -32,4 +32,4 @@ Recording calls a separately installed FFmpeg executable through `subprocess`; n
 
 Vehicle surfaces, wheels, sites and curved-track blocks are generated locally from primitives and numerical parameters. No imported mesh, texture, dataset or manufacturer asset was found among current or historical tracked files. Reference links do not grant asset permissions.
 
-Generated CSV, logs, screenshots and movies remain under ignored `output/` and are not part of the publication payload. Earlier local renderings may retain retired names; they have not been rebranded or approved for inclusion merely by changing this source. Future screenshots/movies must use the current scripts and be reviewed separately before being committed or distributed.
+Generated CSV, logs, screenshots and full-resolution MP4 recordings remain under ignored `output/` and are not part of the publication payload. The two README GIF previews in `docs/media/` are project-generated renders, reviewed for inclusion in the repository and source distribution at the user's request. They use the current primitive scenes and new branding, with no manufacturer footage or images; [their provenance and regeneration](docs/media/README.md) are recorded alongside them. Earlier local renderings may retain retired names and remain excluded. Review additional media separately before distribution.
