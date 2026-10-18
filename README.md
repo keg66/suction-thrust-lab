@@ -1,5 +1,7 @@
 # Suction & Thrust Lab
 
+English | [日本語](README.ja.md)
+
 ## Project Overview
 
 Suction & Thrust Lab is an open-source physics simulation project exploring fan-generated suction, cold-gas thrusters, and vehicle dynamics using MuJoCo. The intended repository name is **`suction-thrust-lab`**; the Python package is **`suction_thrust_lab`**.
@@ -180,4 +182,4 @@ Names in the Inspiration section identify external references only. The vehicles
 
 MIT is the intended license for the project's own code, configurations and documentation. Copyright-holder confirmation is pending; the prepared text is in [the MIT draft](docs/MIT-LICENSE.txt). Do not publish the project as MIT-licensed until that confirmation is recorded and the final `LICENSE` is installed.
 
-Dependencies retain their own licenses. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records the reviewed dependencies and binary-bundling caveats. Source/wheel distributions are intended to contain only project files, not dependency binaries or generated media. [Publication review](docs/PUBLICATION_REVIEW.md) lists remaining human checks.
+Dependencies retain their own licenses. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records the reviewed dependencies and binary-bundling caveats. Source distributions include the two README GIF previews. Runtime wheels exclude media, and neither source nor wheel distributions bundle dependency binaries. [Publication review](docs/PUBLICATION_REVIEW.md) lists remaining human checks.

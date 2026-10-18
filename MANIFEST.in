@@ -1,4 +1,4 @@
-include README.md ROADMAP.md THIRD_PARTY_NOTICES.md requirements.txt
+include README.md README.ja.md ROADMAP.md THIRD_PARTY_NOTICES.md requirements.txt
 include docs/MIT-LICENSE.txt
 recursive-include docs *.md *.html
 recursive-include docs/media *.gif
