@@ -1,6 +1,6 @@
 # Third-party dependencies and notices
 
-The project source does not vendor dependency source, binary wheels, manufacturer CAD, third-party photographs or footage, logos, decals or fonts. Dependencies are installed separately and retain their own licenses; the project's intended MIT license does not relicense them.
+The project source does not vendor dependency source, binary wheels, manufacturer CAD, third-party photographs or footage, logos, decals or fonts. Dependencies are installed separately and retain their own licenses; the project's MIT license does not relicense them.
 
 This review checked installed metadata/license files in the verified environment and official upstream license sources. A different dependency version or platform wheel can contain different bundled components. Preserve the exact upstream license/NOTICE files if you later redistribute those components.
 

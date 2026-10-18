@@ -7,6 +7,8 @@ name = "suction-thrust-lab"
 version = "0.1.0"
 description = "Fan suction, cold-gas thrust, and vehicle dynamics experiments with MuJoCo"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 keywords = ["mujoco", "physics", "suction", "thrusters", "vehicle-dynamics"]
 requires-python = ">=3.10"
 dependencies = ["mujoco>=3.3,<4", "numpy>=2,<3"]

@@ -1,6 +1,6 @@
 # README animation previews
 
-These GIFs were generated from this project's MuJoCo simulation and primitive vehicle/course geometry. No external footage, product images, logos, manufacturer CAD or third-party audio were used. Project licensing status is described in the [root README](../../README.md#license); these are project-generated media, not a license grant for external material.
+These GIFs were generated from this project's MuJoCo simulation and primitive vehicle/course geometry. No external footage, product images, logos, manufacturer CAD or third-party audio were used. These project-generated GIFs are covered by the [MIT License](../../LICENSE). This grant does not cover external material.
 
 | Preview | Local source recording | Playback |
 |---|---|---|

@@ -17,7 +17,7 @@ At the user's request, two project-generated GIF previews are now included under
 
 The historical scan covered private-key markers, common cloud/GitHub token patterns, credential assignments, personal absolute paths and source email addresses. No secret or personal local path was identified in the tracked current or historical source. Apparent email-like matches in Python matrix multiplication expressions were false positives. Pattern-based scans cannot prove that every possible secret is absent.
 
-**Human decision required:** author identity and email remain in Git commit metadata. Decide whether those may be public.
+**Human decision required:** the Git author email remains in commit metadata. The user confirmed the public copyright-holder name, but publication of the retained email address still needs a privacy decision.
 
 At the user's request, all three commits on `main` were rewritten to remove retired project/product names from historical file paths, contents and commit messages. The public refs' 32 distinct blobs / 50 historical file versions were rechecked; no retired names remain there. Author/committer identities and dates were preserved, as were all historical JSON parameters. A private recovery snapshot was saved outside the checkout; current uncommitted source files were verified byte-for-byte before and after the branch replacement. Commit IDs changed:
 
@@ -31,11 +31,13 @@ At the user's request, all three commits on `main` were rewritten to remove reti
 
 `.gitignore` excludes generated output, caches, environments, build products, editor files, local agent settings and common credential files. Ignore rules are preventive; they do not remove already committed content. Packaging explicitly selects the new Python package/configuration files and excludes local output and dependency binaries. The existing local checkout directory name is not embedded into distributable source.
 
-## License status: confirmation required
+## License status: MIT; holder confirmed
 
-MIT is intended for project-owned material. The year 2026 is supported by Git commit dates. Git provides one author handle, but author metadata alone does not establish the legal copyright holder. Holder confirmation has been requested; no name has been invented. Until answered, `docs/MIT-LICENSE.txt` is a visibly marked draft, no final LICENSE is installed, and package metadata makes no MIT grant. Do not present this checkout as fully licensed or publish it until this is resolved.
+On 2026-10-18, the user confirmed `keg66` as the copyright-holder name and selected MIT for project-owned material. The year 2026 is supported by Git commit dates. The root `LICENSE` now contains the standard MIT text and `Copyright (c) 2026 keg66`; the temporary draft has been removed. This records the user's ownership/license instruction rather than inferring a holder from author metadata.
 
-Once ownership is confirmed, install the standard MIT text with the approved holder as `LICENSE`, update package license metadata and README, remove the draft, and rebuild/inspect the distributions. Preserve any applicable third-party notices. Dependencies are separately installed and retain their licenses; see [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). In particular, NumPy wheels may contain GCC runtime and libquadmath components under GPL with runtime exception / LGPL terms. This source audit does not authorize relicensing dependency binaries.
+The grant covers the project's own code, configurations, documentation and generated README previews. English/Japanese README and media notices link to the final license. Package metadata declares the SPDX expression `MIT` and includes the final license and third-party notice file in distributions. Copyright-holder confirmation is resolved; the retained Git author email still needs the publication/privacy decision noted above.
+
+Dependencies are separately installed and retain their own licenses; see [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). In particular, NumPy wheels may contain GCC runtime and libquadmath components under GPL with runtime exception / LGPL terms. Project MIT licensing does not relicense dependency binaries or third-party material.
 
 ## References and claims
 
@@ -46,6 +48,7 @@ Only verified official Tesla product and diecast-model pages are linked in READM
 Verified on Ubuntu, Python 3.14.4, MuJoCo 3.16.0, NumPy 2.5.4 and pytest 9.1.1:
 
 - Built a source distribution and a pure-Python wheel with `python -m build --no-isolation`. The wheel is built from the sdist, checking that its included configuration files suffice.
+- After the user confirmed MIT and the holder, rebuilt the distributions and checked `License-Expression: MIT`, the final LICENSE and third-party notice file, with no obsolete draft shipped. Runtime code and numerical inputs were unchanged.
 - Installed the wheel plus separately obtained dependencies into a fresh virtual environment. Ran from outside the source checkout and checked that imports resolve to that environment's `site-packages`.
 - All existing tests passed: **33 passed in 44.39 s** against the isolated wheel.
 - Ran all five CLI demos to their full default duration. Ceiling retention error before shutdown was below 0.001 mm, followed by release/fall. The lift reached 0.20486 m and consumed 1.4889 g of gas. Downforce contact load rose from 1.1772 N to 4.70754 N with approximately 3.53034 N suction, returning to the initial load after fan shutdown.
@@ -54,19 +57,19 @@ Verified on Ubuntu, Python 3.14.4, MuJoCo 3.16.0, NumPy 2.5.4 and pytest 9.1.1:
 - Compared every configuration value against the preceding commit: all physical numbers are unchanged; only the full-size profile's generic vehicle label changed. Python executable ASTs match after identifier/text normalization, and remaining text diffs were reviewed as docstrings/model display names. No physics/control changes were made.
 - Inspected wheel/sdist member paths and contents and the 25 current source candidates. No retired project names, personal absolute paths, credential-pattern matches, binary/media assets, output directories or dependency binaries were present. All local Markdown links resolved. `git diff --check` passed. This initial audit preceded the subsequently authorized history rewrite described above; after cleanup, only the three sanitized commits remained, with local recovery reflogs/old objects removed after explicit approval. Subsequent publication-preparation changes are committed separately by topic. A post-rewrite regression run also passed all 33 tests in 43.21 s.
 
-These are regression and packaging checks, not empirical validation or a legal opinion. The distributions are local verification artifacts, not published releases; their license remains pending as described above.
+These are regression and packaging checks, not empirical validation or a legal opinion. The distributions are local verification artifacts, not published releases. The project license is now MIT with the confirmed holder, as described above.
 
 ## Change inventory
 
 - Renamed the Python package to `suction_thrust_lab`, distribution/entry point to `suction-thrust-lab`, and the experimental full-size module/config/demo to `full_size`. Updated imports and test names; old aliases are intentionally absent from the public source.
 - Updated both recording scripts' imports, identifiers and displayed branding, preserving the existing camera and replay behavior.
 - Replaced README/ROADMAP with English scope, status, setup, models, configuration, inspiration, disclaimer and license information. Added `docs/PHYSICS.md`, this review and `THIRD_PARTY_NOTICES.md`.
-- Updated `pyproject.toml`, added `MANIFEST.in`, expanded `.gitignore`, and prepared the visibly marked MIT draft. Runtime dependency requirements and numerical inputs were preserved.
+- Updated `pyproject.toml`, added `MANIFEST.in`, and expanded `.gitignore`. The initial MIT draft was replaced by the final root LICENSE after the user confirmed the holder and license. Runtime dependency requirements and numerical inputs were preserved.
 
 ## Before public release
 
-- Confirm copyright ownership and install the final MIT LICENSE.
-- Approve publication of the retained author email/identity. Historical-name sanitization and local old-object/reflog cleanup are complete; do not include the external private recovery snapshot.
+- MIT and the copyright-holder display are finalized; keep the LICENSE and dependency notices when distributing the project.
+- Approve publication of the retained Git author email. Historical-name sanitization and local old-object/reflog cleanup are complete; do not include the external private recovery snapshot.
 - Review this provenance assessment and any newly added assets/contributions.
 - Choose/create the intended repository and review the final public file list. No remote repository URL is assumed here.
 - Resolve any verification failure recorded below before release.

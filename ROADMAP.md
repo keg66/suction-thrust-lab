@@ -25,7 +25,7 @@
 
 ## Publication and maintenance
 
-- Resolve the copyright-holder confirmation and history privacy decisions in the publication review.
+- Review whether the retained Git author email may be published; see the publication review.
 - Review future contributions and assets for provenance and license obligations.
 - Verify additional supported Python/dependency combinations before advertising them as tested.
 
