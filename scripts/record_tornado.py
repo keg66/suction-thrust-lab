@@ -1,4 +1,4 @@
-"""Render the miniature tornado demo with tracking and roll-axis cameras.
+"""Render tornado race demos with tracking cameras and cumulative gas use.
 
 Run: MUJOCO_GL=egl python scripts/record_tornado.py [--demo tornado_full_size]
 Requires system ffmpeg. Output includes real time and a 0.25x flight replay.
@@ -69,8 +69,11 @@ def main():
                     pixels[start:start+240, 960:] = detail.render()
                 proc.stdin.write(pixels.tobytes())
                 if frame % 2 == 0:
+                    gas_used = (f'{sim.gas.used:.2f} kg' if args.demo == 'tornado_full_size'
+                                else f'{sim.gas.used*1000:.3f} g')
                     text = (f'{labels[sim.stage]} | POSITION {sim.race_position}/7 | PASSED {sim.overtaken}/6\n'
-                            f't={target:.2f}s | Speed={sim.data.qvel[0]:.2f} m/s | Roll={np.degrees(sim.roll_angle):.0f} deg')
+                            f't={target:.2f}s | Speed={sim.data.qvel[0]:.2f} m/s | Roll={np.degrees(sim.roll_angle):.0f} deg\n'
+                            f'GAS USED (CUMULATIVE): {gas_used}')
                     captions.append(f'{len(captions)+1}\n{timestamp(target)} --> {timestamp(target+2/fps)}\n{text}\n')
     finally:
         proc.stdin.close()

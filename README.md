@@ -54,6 +54,8 @@ The full-size hardware and control parameters are experimental assumptions, not 
 
 `tornado_full_size` uses the existing 4.536 m, 1600 kg dry-mass full-size chassis and seven jets. It begins already driving at 60 m/s (216 km/h), overtakes six 30 m/s pace cars during a three-second, six-turn roll, and keeps the lead after touchdown. Lift entry takes about 0.15 s and touchdown follows the last turn by about 0.30 s. The existing experimental full-size thrust limits and finite gas supply remain in effect. Defaults live in `tornado_full_size.py` (`tornado_full_size_config()`).
 
+Both tornado videos show cumulative gas expelled by all thrusters: grams for the miniature and kilograms for the full-size version. Slow replay preserves the cumulative value at each physical instant.
+
 The ceiling example begins inverted with the fan already spinning and zero initial pressure difference. `--cold-fan` demonstrates failure to seal during startup. The lift pulse is not a hover controller. Half-pipe flight uses four underside jets, two front lateral jets and one rear jet. There are no top-mounted jets in those examples. Their instantaneous wrench matrix has rank five; lateral force and yaw torque are coupled.
 
 Full-resolution MP4 recordings are generated locally under `output/videos/suction-thrust-lab/` and are excluded from source/wheel distributions. The two README GIF previews are versioned under `docs/media/` and included in the source distribution. To regenerate the recordings:
