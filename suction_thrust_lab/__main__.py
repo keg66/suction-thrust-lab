@@ -12,18 +12,24 @@ from .simulation import Simulation, controls, load_config
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--demo', choices=['ceiling', 'lift', 'downforce'], default='ceiling')
+    parser.add_argument('--demo', choices=['ceiling', 'lift', 'downforce', 'halfpipe'], default='ceiling')
     parser.add_argument('--headless', action='store_true')
     parser.add_argument('--cold-fan', action='store_true', help='start ceiling fan at rest (expected seal failure)')
-    parser.add_argument('--duration', type=float, default=3.)
+    parser.add_argument('--duration', type=float, help='default: 24 s for halfpipe, otherwise 3 s')
     parser.add_argument('--fan-off', type=float, default=1.5)
     parser.add_argument('--burn', type=float, default=.3)
     parser.add_argument('--config', type=Path)
     parser.add_argument('--csv', type=Path)
     args = parser.parse_args()
+    if args.duration is None:
+        args.duration = 24. if args.demo == 'halfpipe' else 3.
     if not np.isfinite(args.duration) or args.duration <= 0 or args.burn < 0 or args.fan_off < 0:
         parser.error('duration must be positive; burn and fan-off must be nonnegative')
-    sim = Simulation(load_config(args.config), args.demo)
+    if args.demo == 'halfpipe':
+        from .halfpipe import HalfpipeSimulation
+        sim = HalfpipeSimulation(load_config(args.config) if args.config else None)
+    else:
+        sim = Simulation(load_config(args.config), args.demo)
     if args.cold_fan:
         sim.suction.speed = 0.
     path = args.csv or Path('output') / (args.demo + '.csv')
@@ -44,21 +50,38 @@ def main():
                 viewer.cam.distance = 1.8
                 viewer.cam.azimuth = 130
                 viewer.cam.elevation = -15
+                if args.demo == 'halfpipe':
+                    viewer.cam.lookat[:] = [-.15, 0, .45]
+                    viewer.cam.distance = 2.1
+                    viewer.cam.azimuth = 100
+                    viewer.cam.elevation = -12
         frame_steps = max(1, round(1 / 60 / sim.model.opt.timestep))
         wall_start = time.monotonic()
         for step in range(int(np.ceil(args.duration / sim.model.opt.timestep))):
             if viewer and not viewer.is_running():
                 break
             with viewer.lock() if viewer else nullcontext():
-                sim.step(*controls(sim, args.demo, args.fan_off, args.burn))
+                if args.demo == 'halfpipe':
+                    sim.advance()
+                else:
+                    sim.step(*controls(sim, args.demo, args.fan_off, args.burn))
                 writer.writerow(sim.row())
                 zmin, zmax = min(zmin, sim.data.qpos[2]), max(zmax, sim.data.qpos[2])
                 if args.demo == 'ceiling' and .05 < sim.data.time < args.fan_off:
                     lost_seal |= sim.surface != 'ceiling'
             if viewer and step % frame_steps == 0:
+                if args.demo == 'halfpipe':
+                    from .halfpipe import draw_exhaust
+                    with viewer.lock():
+                        viewer.user_scn.ngeom = 0
+                        draw_exhaust(sim, viewer.user_scn)
                 viewer.sync()
                 time.sleep(max(0., sim.data.time - (time.monotonic() - wall_start)))
     print(f'{args.demo}: z=[{zmin:.5f}, {zmax:.5f}] m, gas used={sim.gas.used*1000:.4f} g; CSV: {path}')
+    if args.demo == 'halfpipe':
+        print(f'Stage: {sim.stage}; touchdown speed: {sim.landing_speed}; failure: {sim.failure or "none"}')
+        if sim.failure or sim.stage != 'landed':
+            raise SystemExit('Halfpipe demo did not complete a verified soft landing.')
     if args.demo == 'lift' and zmax < .03:
         print('離陸条件を満たせませんでした。総推力、燃焼時間、重量、ガス圧を確認してください。')
     if lost_seal:

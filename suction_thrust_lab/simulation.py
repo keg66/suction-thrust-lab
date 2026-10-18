@@ -36,9 +36,9 @@ def load_config(path=None):
 
 
 class Simulation:
-    def __init__(self, config=None, demo='lift'):
+    def __init__(self, config=None, demo='lift', xml=None):
         self.c = config or load_config()
-        self.model = mujoco.MjModel.from_xml_string(make_xml(self.c))
+        self.model = mujoco.MjModel.from_xml_string(xml or make_xml(self.c))
         self.data = mujoco.MjData(self.model)
         self.car = self.model.body('car').id
         self.suction = Suction(self.c['suction'])
@@ -97,14 +97,14 @@ class Simulation:
     def row(self):
         d = self.data
         row = {'time_s': d.time}
-        for names, values in [('x_m y_m z_m qw qx qy qz', d.qpos),
-                              ('vx_world_m_s vy_world_m_s vz_world_m_s wx_body_rad_s wy_body_rad_s wz_body_rad_s', d.qvel)]:
+        for names, values in [('x_m y_m z_m qw qx qy qz', d.qpos[:7]),
+                              ('vx_world_m_s vy_world_m_s vz_world_m_s wx_body_rad_s wy_body_rad_s wz_body_rad_s', d.qvel[:6])]:
             row.update(zip(names.split(), values))
         wrench = np.zeros(6)
         normal = 0.
         for i in range(d.ncon):
             contact = d.contact[i]
-            if self.car in self.model.geom_bodyid[[contact.geom1, contact.geom2]]:
+            if self.car in self.model.body_rootid[self.model.geom_bodyid[[contact.geom1, contact.geom2]]]:
                 mujoco.mj_contactForce(self.model, d, i, wrench)
                 normal += wrench[0]
         row.update(suction_N=self.suction.force, delta_pressure_Pa=self.suction.pressure,
