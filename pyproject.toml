@@ -1,11 +1,13 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "suction-thrust-lab"
 version = "0.1.0"
-description = "Phase 1 MuJoCo suction and cold-gas experiments"
+description = "Fan suction, cold-gas thrust, and vehicle dynamics experiments with MuJoCo"
+readme = "README.md"
+keywords = ["mujoco", "physics", "suction", "thrusters", "vehicle-dynamics"]
 requires-python = ">=3.10"
 dependencies = ["mujoco>=3.3,<4", "numpy>=2,<3"]
 
@@ -14,6 +16,9 @@ test = ["pytest>=8,<10"]
 
 [project.scripts]
 suction-thrust-lab = "suction_thrust_lab.__main__:main"
+
+[tool.setuptools]
+include-package-data = false
 
 [tool.setuptools.packages.find]
 include = ["suction_thrust_lab*"]

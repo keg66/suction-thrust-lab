@@ -1,37 +1,32 @@
-# 今後の拡張
+# Roadmap
 
-## Phase 1で確認した範囲
+## Implemented examples
 
-近接面に限定した吸引、天井の静止保持と解放、外力による浮上、有限ガス・電池、CSV、Viewer、理論比較テストを実装済みです。漏れとファン特性は保持成立性の検証に必要な最小モデルを先行実装しました。天井デモは反転・事前回転状態から開始します。床から天井までの連続飛行は未実装です。
+- Miniature floor downforce, initialized ceiling attachment/release, and a thrust-driven lift pulse.
+- Lumped fan P–Q/leak/pressure dynamics, battery use, finite ideal-gas blow-down, point forces and torques.
+- Seven-nozzle miniature and experimental full-size half-pipe sequences: wheel-driven suction climb, edge detection, roll-180, controlled recovery and soft landing.
+- Scenario-specific PD control, pressure-aware constrained allocation, changing mass/inertia, first/repeated touchdown checks, CSV logging and Viewer exhaust arrows.
+- Side/axial camera recordings with an appended slow-motion airborne replay.
 
-## ハーフパイプ追加で実装した範囲
+## Model validation
 
-専用デモに、曲面シール、四輪の回転・駆動、ガス消費に応じた質量・慣性更新、指定7ノズルへの制約付き配分、位置・姿勢PD、上端離脱からロール180°・減速・軟着陸までの連続シーケンスを追加しました。上面ノズルを使わず、反転中の自由落下と、正立後の底面ノズルによる減速を計算します。7基の配分行列はランク5であり、横力とヨーが連動します。動画と噴射表示、回帰テストも含みます。これらは`halfpipe`専用の仮定・設定であり、既存のPhase 1デモは保持しています。
+1. Compare fan curves, efficiency, sealing gaps and skirt compliance with measurements; examine step-size sensitivity.
+2. Add real-gas compressibility, adiabatic blow-down, heat transfer, nozzle/valve flow limits and regulator behavior. The present full-size high-pressure ideal-gas case needs substantial validation.
+3. Account for hardware mass, tank strength, packaging, energy supply and the gas distribution's effect on center of mass/inertia.
+4. Compare scales with controlled geometry, thrust-to-weight ratio and dimensionless parameters. The current two profiles are different assumed systems, not an isolated scale study.
 
-以下は残作業です。四輪駆動・配分器・飛行制御の基礎はハーフパイプで実装済みですが、汎用化、実測との照合、任意配置への対応、天井走行・連続吸着、外乱試験は引き続き必要です。
+## Motion and control
 
-## 実車相当サイズの追加
+- Extend wheel-drive validation to flat walls and ceilings; current flat-ceiling behavior is attachment/release, not powered driving.
+- Add a standalone hover scenario and disturbance-recovery criteria; generalize allocation without claiming unavailable instantaneous control authority.
+- Implement continuous floor launch, flight, approach, inversion, fan-assisted ceiling capture and holding, with state-based success/failure checks.
+- Add manual controls and trajectory/energy diagnostics.
+- Add calibrated full-size vehicle profiles alongside the miniature examples.
 
-4.536 mの車体、1600 kgの乾燥質量、有限ガスを持つ`roadster`を追加しました。車体・車輪・慣性・ノズル腕長・曲面・モータ・制御時間を対応させ、重力を変えずに同じ7基の構成で登坂・ロール・軟着陸を実行します。寸法の出典、未公開装置の仮定、理想気体近似の限界はREADMEに記載しています。
+## Publication and maintenance
 
-今後、実在気体と断熱冷却、レギュレータ・ノズルの流量上限、タンクとファンの重量・搭載体積を入れ、成立条件がどれだけ変わるかを検証します。推力重量比と幾何形状を固定した厳密なスケール比較も別途必要です。
+- Resolve the copyright-holder confirmation and history privacy decisions in the publication review.
+- Review future contributions and assets for provenance and license obligations.
+- Verify additional supported Python/dependency combinations before advertising them as tested.
 
-## Phase 2：物理と制御の拡張
-
-1. タンクと車体の質量内訳を決め、消費ガスによる質量・重心・慣性の変化を導入する。等温と断熱ブローダウンを比較し、ノズル流量・圧力推力を検証する。
-2. 実測または選定部品のファン特性でP–Q曲線・効率を置き換える。スカート各辺の隙間、変形、ファン側への逆流、残留圧の開放時間を追加する。時間刻みへの依存性と漏れパラメータ感度を測る。
-3. 車輪に回転jointとモータを追加し、四輪駆動を簡易実装する。床と天井でスリップ・牽引力・電力を検証する。
-4. 双方向の姿勢制御ノズルを追加する。標準の7ノズル配置はランク5でヨー不可。単なる行列のランクだけでなく、非負入力・飽和・減圧下で到達可能な力とトルクを確認する。
-5. 高度・ロール・ピッチ・ヨーのPIDと制約付きcontrol allocationを実装する。まず姿勢固定・高度維持を検証し、外乱からの回復、アンチワインドアップ、ガス消費・残飛行時間を評価する。
-
-完了判定は、指定高度・姿勢の誤差範囲を設定して維持でき、外乱後も回復し、燃料不足では安全に失敗を報告することです。今の定数バルブ入力による浮上をホバリング成功とは扱いません。
-
-## Phase 3：連続した統合デモ
-
-1. 待機・吸引・急加速・離陸・ホバリング・移動・反転・天井接近・吸着・保持を状態機械でつなぐ。遷移条件は時刻だけでなく距離・姿勢誤差・負圧・接触・燃料残量で判定する。
-2. 反転中も重量を支えられるノズル配置と推力余裕を確保する。天井捕捉では、ファンを事前回転し、スラスタで接近速度と隙間を維持してから荷重を移す。冷間起動の失敗を回帰テストに残す。
-3. 初期リセット以外のqpos/qvel直接変更を禁止したまま、床から天井までの連続成功を自動テストする。失敗時は推力不足、シール不足、姿勢制御権限、エネルギー不足を識別して記録する。
-4. Viewerのキー操作でシーケンスと手動指令を切り替える。推力・吸引の矢印、軌跡、CSVからの簡易グラフを追加する。
-5. タンク、ファン、電池、スカートを含む体積・質量の収支を評価する。120 gに収まらない場合は必要な重量と性能条件を示す。Teslaの未公開仕様を推測で確定値にしない。
-
-CFD、ROS 2、強化学習、Web UIは当面導入しません。
+CFD, ROS 2, reinforcement learning and a web frontend remain outside the current scope.

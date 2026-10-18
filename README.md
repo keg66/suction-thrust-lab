@@ -1,248 +1,161 @@
-# Suction & Thrust Lab — MuJoCoデモ
+# Suction & Thrust Lab
 
-汎用の小型車体について、吸引による天井保持とコールドガスによる浮上を検証するMuJoCoシミュレーションです。車体はfree jointを持つ6DoF剛体です。実行中に位置や姿勢を直接変更せず、力と接触を積分します。Teslaの実機設計・性能を再現したものではありません。寸法と初期質量は依頼時の値、ファン・タンク・スラスタは本実験の仮定です。
+## Project Overview
 
+Suction & Thrust Lab is an open-source physics simulation project exploring fan-generated suction, cold-gas thrusters, and vehicle dynamics using MuJoCo. The intended repository name is **`suction-thrust-lab`**; the Python package is **`suction_thrust_lab`**.
 
-## ロードスター相当サイズのデモ
+It investigates unconventional vehicle maneuvers, including wall climbing, ceiling driving, hovering, and aerial attitude control. These are research directions, not a claim that every maneuver is implemented. A miniature vehicle is the primary example. An experimental full-size preset already exists; further full-size vehicle models, calibration, and hardware feasibility studies are planned.
 
-```bash
-python -m suction_thrust_lab --demo roadster
-PYGLFW_LIBRARY_VARIANT=x11 python -m suction_thrust_lab --demo roadster
-python -m suction_thrust_lab --demo roadster --headless
-MUJOCO_GL=egl .venv/bin/python scripts/record_halfpipe.py --demo roadster
-```
+All vehicle and course geometry is built from simple primitives. No manufacturer CAD models, logos, decals, product photographs, or presentation footage are distributed.
 
-[実車相当デモ（等速40秒）](output/videos/roadster.mp4)・[反転部分の0.25倍速リプレイ](output/videos/roadster-slow.mp4)。車体は赤いスポーツカー風のプリミティブです。吸着・四輪駆動・7基のガス噴射によるロール180°・減速・移動・着地を連続して実行します。手動操作は未実装です。
+## Features
 
-`suction_thrust_lab/roadster.json`に専用設定を保存しています。寸法4.536×1.971×1.260 mは、[Tesla公式1:18モデルの寸法](https://shop.tesla.com/en_ca/product/diecast-1_18-scale-roadster?sku=1524001-00-A)を18倍した参考値です。新型実車の確定寸法としては扱いません。その他の値は本シミュレーションの仮定です。
-
-| 項目 | 実車相当デモの設定 |
+| Capability | Current status |
 |---|---|
-| 乾燥質量 | 1600 kg（4輪各20 kgを含む） |
-| 初期ガス・総質量 | 約482.72 kg・約2082.72 kg（理想気体計算） |
-| 斜面 | 半径約13.89 m、高さ約27.77 m |
-| 車輪半径・駆動 | 約0.401 m、最大約4937 N m/輪 |
-| ファン | 有効面積5 m²、最大静圧16 kPa、最大流量2 m³/s、最大入力30 kW |
-| タンク | 600 L・70 MPa・293.15 K、一定有効排気速度600 m/s |
-| ノズル | 底面四隅4基×60 kN、前方側面2基×20 kN、後方1基×8 kN（初期圧力での上限） |
-| ロール目標時間 | 約1.39秒 |
-| 電池 | 36 MJ、ファンとモータの入力を積算 |
-| 着地判定 | 全接地の直前速度0.5 m/s以下、接触中の速度0.1 m/s以下を確認 |
+| 6DoF rigid-body dynamics, contact and friction | Implemented in MuJoCo |
+| Suction, pressure dynamics, leakage, fan P–Q curve and battery consumption | Implemented as simplified lumped models |
+| Floor, wall and ceiling seal eligibility | Implemented; flat-wall force direction is tested |
+| Ceiling attachment and fan-off release | Implemented from an inverted, near-ceiling initial state |
+| Cold-gas thrust, off-center torque, blow-down and finite gas supply | Implemented |
+| Four driven wheels and suction-assisted curved climbing | Implemented in the half-pipe examples |
+| Roll-180, controlled aerial recovery and soft landing | Implemented for the configured seven-nozzle layouts |
+| Generic wall/ceiling driving, floor-to-ceiling flight and attachment | Planned |
+| Standalone hover demo, general controller/allocation, manual flight controls | Planned; current flight control is scenario-specific |
 
-推力の値は大きな仮定です。ガス減圧で各基の上限は低下し、指令と実出力の差を記録します。7基の配分行列はランク5で、上面ノズルは使いません。逆さの間は落下し、片側の底面2基でロールを始め、反対側で回転を止め、正立してから降下を減速します。
+## Demonstrations
 
-**これは仮定した装置が理想化モデル上で成立するデモであり、Tesla実機の性能予測ではありません。** 特に70 MPaでは理想気体近似の誤差が大きく、実際の窒素質量はこの計算と異なります。断熱冷却、実在気体、ノズル流量制限、タンク構造・重量・搭載空間、加熱・再充填は未検証です。公開映像の挙動に合わせた結果を、実機仕様の証明としては扱いません。
+| CLI demo | What it does | Default duration |
+|---|---|---:|
+| `downforce` | Compare floor contact load with the fan off/on | 3 s |
+| `ceiling` | Hold beneath a ceiling, then release when the fan stops | 3 s |
+| `lift` | Rise under a 0.3 s thrust pulse, then fall | 3 s |
+| `halfpipe` | Miniature vehicle: driven climb, edge departure, roll-180, recovery and landing | 24 s |
+| `full_size` | The same sequence with an experimental full-size vehicle and separately assumed hardware | 40 s |
 
-### ミニ四駆がすぐ地面近くまで落ちる理由
+The ceiling example begins inverted with the fan already spinning and zero initial pressure difference. `--cold-fan` demonstrates failure to seal during startup. The lift pulse is not a hover controller. Half-pipe flight uses four underside jets, two front lateral jets and one rear jet. There are no top-mounted jets in those examples. Their instantaneous wrench matrix has rank five; lateral force and yaw torque are coupled.
 
-重力加速度はサイズと質量によらず9.81 m/s²です。支持も初速度もない場合、0.25秒で約0.307 m、0.5秒で約1.226 m落ちます。0.9 mの斜面では、この距離が高さの大部分を占めます。さらに裏返った車体の底面ノズルは、回転トルクと同時に下向き推力を生むため、自由落下より速く下がる区間があります。
-
-一方、相似な車体では`I ∝ m L²`、ノズルのトルクは`tau ∝ F L`です。推力重量比が同じなら角加速度は概ね`1/L`となり、反転に必要な時間は`√L`、その間の落下距離は`L`に比例します。車体と斜面を大きくするだけで、相対的な落下が自動的に小さくなるわけではありません。
-
-| 実行結果 | ミニ四駆 | 実車相当 |
-|---|---:|---:|
-| 離脱時の重心高度 | 約0.873 m | 約26.93 m |
-| 反転・減速中の最低高度 | 約0.158 m | 約7.24 m |
-| 接地直前速度 | 約0.050 m/s | 約0.282 m/s |
-| ガス消費 | 約29.53 g | 約451.9 kg |
-
-2つのデモは推力・ガス量・制御・車体の縦横比も異なるため、サイズだけの効果を分離した実験ではありません。pytestでは、推力を止めた同じ0.25秒間の落下距離が両モデルで一致することも確認します。
-
-実車相当デモは約19.38秒で離脱し、約33.37秒で接触中の静止を確認します。斜面上の定常吸引力は約59.47 kN、飛行後の残留ガスは約30.82 kgです。CSVは`output/roadster.csv`（Viewer/CLI）または`output/videos/roadster.csv`（録画時）に出力します。カメラと排気矢印は表示用にスケールを変えますが、重力・時刻・外力はSI単位のままです。
-
-## ハーフパイプ → 半回転 → 軟着陸
+Recordings are generated locally under `output/videos/suction-thrust-lab/` and are not bundled in the source distribution:
 
 ```bash
-python -m suction_thrust_lab --demo halfpipe
-# X11が必要な環境
-PYGLFW_LIBRARY_VARIANT=x11 python -m suction_thrust_lab --demo halfpipe
-# 全24秒を計算しCSV保存
-python -m suction_thrust_lab --demo halfpipe --headless
-# 動画を再生成（ffmpeg + EGL）
-MUJOCO_GL=egl .venv/bin/python scripts/record_halfpipe.py
+MUJOCO_GL=egl python scripts/record_demos.py
+MUJOCO_GL=egl python scripts/record_halfpipe.py --demo halfpipe
+MUJOCO_GL=egl python scripts/record_halfpipe.py --demo full_size
 ```
 
-[ハーフパイプ動画（等速24秒）](output/videos/halfpipe-roll.mp4)・[ロール部分の0.25倍速リプレイ](output/videos/halfpipe-roll-slow.mp4)。右上は車体の追尾拡大表示、青い矢印は実際に動作しているノズルの排気方向です。矢印の長さは推力に応じた表示用スケールで、噴流の流体計算ではありません。
+The half-pipe recordings show an overview, a side tracking view, and an axial view during flight. Each combined movie appends a 0.25× replay from edge departure through stable landing. Blue arrows show exhaust direction with a display-only length scale. Recording needs a separate system `ffmpeg` executable with `libx264`, `drawtext`, and `subtitles`, plus a working EGL/OpenGL environment. Neither FFmpeg nor fonts are redistributed here.
 
-床から半径0.45 m・高さ0.9 mの半円状の路面へ入り、四輪のモータと吸着力で低速走行します。前側のスカートが上端を越えてシールを失ったら、ガス噴射に切り替えて路面から離れます。車体の前後軸を中心に、左右方向へロール180°して正立します。前方を路面から離れる向きに保ち、姿勢を立て直してから着陸パッドへ低速移動・降下します。写真の構図を参考にした動作で、Teslaの実機仕様を再現したものではありません。
+## Installation
 
-開始時以外は`qpos`・`qvel`を直接変更しません。走行は車輪jointへのモータトルクと摩擦、飛行は有限ガスのスラスタ外力によって進みます。軌道と姿勢の目標値はPD制御への入力であり、車体位置を指定通りに動かす拘束ではありません。
+Use Ubuntu Linux and Python 3.10 or newer. The checked environment is Python 3.14.4, MuJoCo 3.16.0, NumPy 2.5.4 and pytest 9.1.1; other supported Python/dependency combinations have not all been tested. Viewer use requires a desktop session and OpenGL. Headless physics does not require a display.
 
-### 専用モデルと制約
-
-設定は`suction_thrust_lab/halfpipe.json`です。既存Phase 1のJSONと挙動は維持しています。
-
-- 半円路面を128個の薄い剛体ブロックで構成し、衝突形状と吸引のray判定に同じ形状を使います。四隅と中央が近接面を向く場合だけ吸引します。
-- スカートには最大6 mmの追従変形を仮定し、その範囲で曲面に沿ってシールします。残留漏れは0.1 mm相当です。スカートの弾性・変形仕事そのものは未実装です。上端からはみ出した場合、遠方の路面を吸引しません。
-- 四輪は独立した回転jointを持ち、各輪の駆動トルク上限は0.012 N m。目標速度0.12 m/sに対して実走行は負荷で低下します。摩擦による制約があり、空中で駆動しても系全体の並進推力は発生しません。モータ電力は機械出力/効率とトルクに応じた抵抗損失を加算して電池から差し引きます。
-- **ガスタンクは200 cm³・20 MPaへ拡大**しています。初期ガス約45.97 g、乾燥質量120 g、開始時総質量約165.97 gです。元の20 cm³タンクではこのゆっくりした飛行を維持できません。タンク構造の強度・質量・収納性は未検証で、実機に搭載できるという主張ではありません。
-- ガス消費に応じてMuJoCoの質量・慣性を更新します。ガスは車体重心を中心とした対称分布とし、車体と同じ慣性形状比を仮定します。`mj_setConst`は別の作業用データに対して実行し、実際の位置・速度を変えません。等温タンク・一定有効排気速度の近似はPhase 1と同じです。
-- **ノズルは指定の7基だけ**です。底面四隅4基（+z推力、初期最大3 N/基）、前方左右の側方2基（±y推力、0.5 N/基）、後方1基（+x推力、0.8 N）。車体上面のノズル、前向き排気用のノズル、独立した姿勢制御ノズルはありません。排気は推力の逆方向です。ノズル配置と性能値はこの実験の仮定で、Teslaの公開仕様として扱いません。
-- **ロールは底面ノズルの左右推力差で作ります。** 片側2基を強めて回転を始め、反対側を強めて回転を止めます。前後差はピッチの微調整に使います。ロールの目標時間は0.25秒です。
-- 裏返っている間に底面ノズルを吹くと、排気は世界座標で上向き、車体への推力は下向きになります。上側へ排気が見えても、車体上面から噴射しているわけではありません。重力を支えられない区間を自由落下・回転で通過し、ほぼ正立してから底面4基で降下を減速します。
-- 力・トルク行列は**ランク5**です。前方の側方ノズルは`tau_z = 0.055 × F_y`となり、横力とヨートルクを独立に指定できません。また底面は正のz推力、後方は正のx推力のみです。全方向に任意の力を発生できるモデルとしては扱いません。
-- 飛行中の移動は、車体を傾けて底面の推力方向を変える方式です。側方ノズルはヨー制御に使い、その横力も実際の剛体へ加えます。配分器はこの7基の配置・順序に対応し、負の推力を作らず、必要なトルクのために共通推力を増やすことがあります。その場合は要求した鉛直推力と一致せず、残差をCSVへ記録します。
-- 位置・姿勢制御を500 Hz、力学を1 kHzで計算します。離脱、ロール、減速・低速飛行、降下、接地確認の段階を記録します。接地直前速度0.15 m/s超、早すぎる接地、燃料切れ、タイムアウト、未完了を成功扱いしません。飛行目標には時間ベースの区間があり、任意の斜面への自律計画ではありません。
-
-標準設定では約14.51秒で上端から離脱し、約20.35秒で着地の安定を確認します。接地直前速度は約0.050 m/s。約29.53 gのガスを消費し、着地後には噴射とファンを停止します。反転・減速中には重心が約0.16 mまで下がり、その後約0.3 mへ戻して低速飛行します。反転中の最大降下速度は約3.16 m/sで、この区間だけを低速で演出していません。CSVには動作段階、離脱時からのロール角、総質量、モータ電力・積算電力量、配分誤差、接地速度も記録します。`allocation_error`は力・トルク残差の混合ノルムであり、単一の物理単位を持つ指標ではありません。
-
-テストでは連続動作、路面上の吸着、曲面・上端の判定、約半回転、軟着陸、質量保存、有限資源、7基への制約付き配分と飽和、空中の車輪駆動が並進力を作らないことを確認します。
-
-## 環境構築と実行
-
-Ubuntu、Python 3.10以上、ViewerにはOpenGLとデスクトップセッションが必要です。検証環境はPython 3.14.4、MuJoCo 3.16.0です。
+After obtaining this source in a directory named `suction-thrust-lab`:
 
 ```bash
-cd /path/to/suction-thrust-lab
+cd suction-thrust-lab
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install -e '.[test]'
+```
+
+`requirements.txt` records the exact versions used for verification. On the same Python version, install those first if you need that environment:
+
+```bash
 python -m pip install -r requirements.txt
+python -m pip install --no-deps -e '.[test]'
+```
 
-# 天井保持 → 1.5秒でファン停止 → 落下（3秒）
-python -m suction_thrust_lab --demo ceiling
+The development pins may not be available for every older Python version; the ordinary editable install resolves versions compatible with your interpreter. No GitHub repository URL is assumed before the repository is created.
 
-# 床上から0.3秒噴射 → 上昇 → 落下
-python -m suction_thrust_lab --demo lift
+## Quick Start
 
-# 床上で0.5〜1.5秒にファンON、接触荷重を比較
-python -m suction_thrust_lab --demo downforce
+```bash
+# Interactive MuJoCo Viewer
+suction-thrust-lab --demo ceiling
+python -m suction_thrust_lab --demo halfpipe
+python -m suction_thrust_lab --demo full_size
 
-# デスクトップを使わない物理計算とテスト
+# Display-free physics and CSV logging
 python -m suction_thrust_lab --demo ceiling --headless
 python -m suction_thrust_lab --demo lift --headless
+python -m suction_thrust_lab --demo halfpipe --headless
+python -m suction_thrust_lab --demo full_size --headless
 python -m pytest -q
 ```
 
-この作業環境では`.venv`を作成済みです。`python -m pip install -e '.[test]'`でも導入できます。固定バージョンが必要な場合は先に`requirements.txt`を使用してください。
-
-WaylandでGLFWが接続できない環境では、XWayland/X11が利用可能なら次を試せます。
+If a Wayland session cannot initialize GLFW and XWayland/X11 is available:
 
 ```bash
 PYGLFW_LIBRARY_VARIANT=x11 python -m suction_thrust_lab --demo ceiling
 ```
 
-この環境ではデスクトップへのアクセスを許可したX11経由でViewerの起動・1秒間の実行・正常終了を確認しました。画面のないサーバーでは`--headless`を使ってください。ヘッドレス物理計算はOpenGLを使いません。
+The Viewer supports its standard camera controls. Closing the window stops the run. An incomplete or failed half-pipe sequence reports failure rather than claiming a verified landing. CLI runs write `output/<demo>.csv`; `--csv` selects another path and existing output files are overwritten.
 
-Viewerのマウス操作で回転・ズームできます。初期カメラは床と天井が見える全景です。車体を見る場合はズームしてください。Viewerを閉じると終了します。自動シーケンスのみで、車両の手動操作は未実装です。
+## Physics Models
 
-```bash
-# 天井保持を5秒間観察（停止時刻を終了より後に設定）
-python -m suction_thrust_lab --demo ceiling --duration 5 --fan-off 6
-# 冷間起動では保持に失敗する実験
-python -m suction_thrust_lab --demo ceiling --cold-fan --headless
-# パラメータを複製して編集
-cp suction_thrust_lab/default.json configs/experiment.json
-python -m suction_thrust_lab --config configs/experiment.json --demo lift --burn 0.2 --duration 2 --csv output/experiment.csv
-```
+All physical inputs use SI units. Body axes are +x forward, +y left and +z up. A nozzle's `direction` is the force on the vehicle; exhaust travels in the opposite direction.
 
-## 既存Phase 1デモのモデルと仮定
-
-この節は`ceiling`・`lift`・`downforce`に適用します。新しい`halfpipe`は後述の専用設定と制御を使います。
-
-単位はSIです。車体座標は+xが前、+yが左、+zが上。設定のスラスタ`direction`は**車体が受ける推力の方向**で、排気の方向はその逆です。位置は車体重心基準です。
-
-- 全長147 mm、全幅90 mm、全高41 mm、総質量120 g。慣性は同寸法の一様直方体から推定します。`Ixx=9.781e-5`、`Iyy=2.329e-4`、`Izz=2.9709e-4 kg m²`です。
-- 白いシャーシ、青いキャノピーとウイング、赤い帯、4輪をプリミティブで構成しています。タミヤの正式な外形・3Dアセットではありません。
-- 車輪は車体に固定した接触形状です。車輪の回転・四輪駆動・天井走行は後続Phaseで実装します。
-- 床と天井は2 m四方、天井下面はz=1 m。x=1 mに壁を設置しています。壁への吸引方向と近接判定もテストしますが、壁面走行は未実装です。
-- 固定タイムステップ1 ms、MuJoCoの接触・摩擦モデルを使用します。接触には小さな数値的貫入があります。
-
-### 吸引
-
-`F = ΔP × A`。面積は0.01 m²、スカートの矩形範囲は125×80 mm、下面は重心から20.5 mm下です。スカート四隅が対象面内にあり、各隙間が2 mm以下、下面が面の方向を向く場合だけ有効です。接触計算の微小貫入は1 mmまで判定上許容します。遠方、面の外側、裏向き、隙間の大きい傾斜では圧力を大気圧へ開放し、吸引力をゼロにします。
-
-ファン特性は回転数比`n`に対して次の簡易式です。
+**Suction:** `F = delta_P * A`. A seal is valid only for nearby, correctly oriented surfaces. Flat-surface checks use the skirt corners. Curved examples ray-test the corners and center against the actual course geometry, with a finite flexible-skirt travel assumption. Remote surfaces do not attract the vehicle.
 
 ```text
-P_shutoff = 450 n² [Pa]
-Q_fan = 0.003 n max(0, 1 - ΔP/P_shutoff) [m³/s]
-Q_leak = Cd × perimeter × gap × sqrt(2 ΔP / rho)
-d(ΔP)/dt = P_ambient / V × (Q_fan - Q_leak)
+P_shutoff = P_max * n²
+Q_fan = Q_max * n * max(0, 1 - delta_P / P_shutoff)
+Q_leak = Cd * perimeter * gap * sqrt(2 * delta_P / rho)
+d(delta_P)/dt = P_ambient / V * (Q_fan - Q_leak)
 ```
 
-最大静圧と最大風量を同時には発生させません。等温の集中定数モデルを、後退Euler法と二分法で解きます。`rho RT ≈ P_ambient`とする低差圧近似です。床下体積30 cm³、Cd=0.65、空気密度1.2 kg/m³、最小漏れ隙間0.1 mm、ファン応答時定数10 msを仮定します。漏れ隙間には四隅の平均距離を用い、四隅の最大距離はシールの可否判定に使用します。
+This is a low-pressure-difference, isothermal approximation, integrated by backward Euler and bisection. Fan speed has a response lag, electrical input scales as `n³`, and a finite battery also supplies the wheel motors. Maximum static pressure and free-air flow are not simultaneously available. A completely sealed, stopped-fan test assumes no reverse flow; normal examples retain leakage.
 
-消費電力は`8 n³ W`、初期電池エネルギーは1000 Jです。電力を積算し、電池切れでファンの駆動を停止します。流体出力`ΔP Q`と電気入力は同じではありません。実ファンの効率・温度・ローターの慣性エネルギーまではモデル化していません。
+**Cold gas:** `P = mRT/V`, `F = m_dot * v_e`. Available thrust decreases with tank pressure above ambient. Mass demand is shared across the nozzles, and thrust vanishes when usable gas is exhausted. Force is applied at each nozzle location with `mj_applyFT`, producing `r × F` torque. Exhaust kinetic energy is accumulated.
 
-完全密閉実験は`min_gap=0`かつ距離0で行います。この理想条件では逆流防止を仮定し、停止ファンからの逆流がなく、負圧を維持します。通常の天井デモは漏れがあるため、停止後に負圧が失われて落下します。
+**Vehicle and control:** inertia is estimated from vehicle dimensions. The basic demos keep mass/inertia fixed, while half-pipe examples update them as gas is consumed. Wheels are separate driven joints only in the half-pipe examples. Scenario-specific position/attitude PD control requests a wrench subject to one-way jets, pressure loss and saturation. Inverted underside jets cannot support gravity: the car falls during the roll and brakes after becoming upright.
 
-**天井デモは、反転した車体を天井直下に配置し、ファンが既に定格回転している状態から開始します。初期負圧は0 Paです。** これは開始条件であり、飛行から天井を捕捉した結果ではありません。ファン停止状態から解放すると、立ち上がり中の落下で隙間が増え、保持できません。`--cold-fan`がこの失敗を再現します。
+See [model assumptions and reference results](docs/PHYSICS.md). These models omit CFD, real-gas behavior, tank cooling, detailed nozzle flow, structural feasibility, and measured component calibration. In particular, the high-pressure full-size preset is an idealized experiment, not a vehicle performance prediction.
 
-### コールドガス
+## Configuration
 
-```text
-P_tank = m R T / V
-F_i = u_i Fmax_i × clip((P_tank-P_ambient)/(P_initial-P_ambient), 0, 1)
-m_dot_i = F_i / v_e
-```
-
-窒素相当の比気体定数296.8 J/(kg K)、293.15 K、タンク20 cm³、初期圧力20 MPa（絶対圧）、有効排気速度300 m/sを仮定します。初期ガスは約4.60 gです。大気圧に達すると使用不能になり、約0.0233 gの残留ガスを残します。ステップ中の使用可能量を超える要求は全ノズルを比例縮小し、質量を負にしません。
-
-4基の浮上スラスタは初期最大0.45 Nずつ、合計1.8 N。後方の前進用1基と左右の横移動用2基も設定できます。各力をワールド座標へ変換し、`mj_applyFT`で噴射位置へ加えるため、`r × F`のトルクが発生します。噴射中は圧力と推力が低下します。排気運動エネルギー`½ Δm v_e²`も積算します。
-
-圧力推力は有効排気速度に含む近似です。ノズルのチョーク流、温度低下、タンク壁の熱容量は省略します。等温仮定は熱供給を暗黙に必要とするため、長時間・高流量噴射の成立性を示すモデルではありません。
-
-**120 gには初期ガスを含むものとし、剛体の質量・慣性は固定します。** 消費ガス分の軽量化を無視するため、最大約3.8%の質量誤差があり、浮上加速度を低めに評価します。タンク・ファン・電池をこの寸法と総質量に収められるかは未検証です。これは力学条件の実験であり、実機搭載可能性の証明ではありません。
-
-標準配置の力・トルク配分行列はランク5です。ヨートルクは発生できず、一方向ノズルの制約もあります。6DoF剛体であることと任意の6DoF制御ができることは別です。PID、control allocation、ホバリング制御は未実装です。初期推力を重量に合わせても、圧力低下でそのままでは降下します。
-
-## 検証結果
-
-Phase 1の21件に、ハーフパイプ用の8件と実車サイズ用の4件を追加しています。理論値とMuJoCoによる結果の比較を含みます。
-
-| 確認項目 | 結果・許容誤差 |
+| File | Use |
 |---|---|
-| 118 Pa × 0.01 m² | 1.18 N、絶対誤差1e-9 N以内 |
-| 235 Pa × 0.01 m² | 2.35 N、絶対誤差1e-9 N以内 |
-| 完全密閉の235 Pa | 停止ファンで1秒保持、誤差1e-6 Pa以内 |
-| 漏れありの定常状態 | 約353.034 Pa、流入・排出とも約0.000646442 m³/s、相対差1e-5以内 |
-| 推力=重量1.1772 N | 接触のない初期ステップで鉛直加速度0、誤差1e-8 m/s²以内 |
-| 推力=重量の1.5倍 | 初期鉛直加速度4.905 m/s²、誤差1e-8 m/s²以内 |
-| 偏心ノズル | `r × F`と一般化力のトルクが1e-9 N m以内で一致 |
-| 天井保持 | 0.3〜1.5秒の重心位置が目標から0.5 mm以内、1.5秒の停止後に落下 |
-| 浮上 | 重心の最高高度約0.20486 m、0.3秒の噴射で約1.4889 g消費 |
-| 床の接触荷重 | ファンOFFで1.1772 N、ONで4.70754 N、増分が吸引力3.53034 Nと一致 |
-
-ガス枯渇、電池切れ、遠方・裏向き・面外・傾斜での無効化、壁への力の方向、冷間ファンでの保持失敗もテストしています。Viewer起動に加え、MuJoCoのEGLレンダリングで[車体プレビュー](output/preview.png)を生成し、形状を確認しました。
-
-## ログとファイル
-
-各デモは`output/<demo>.csv`へ1 msごとに記録します。同じ出力先は上書きされるので、保存したい実験には`--csv`を指定してください。
-
-- 時刻、位置、姿勢クォータニオン（w,x,y,z）、並進速度（ワールド）、角速度（車体座標）
-- 吸引力、負圧、ファン流量、漏れ流量、電力、電池エネルギー
-- 各スラスタの推力、ガス質量、タンク圧力、累積排気運動エネルギー
-- 接触数、車体への接触法線荷重の合計、有効面、シール隙間
-
-行の時刻・位置・速度・接触はステップ終了時です。吸引・噴射・シール情報はその直前の区間に適用した値です。接触荷重は接触座標系の法線力の合計で、ワールドz成分ではありません。天井保持では接触荷重は吸引力から重量を引いた値になります。
-
-| ファイル | 役割 |
-|---|---|
-| `suction_thrust_lab/default.json` | 初期パラメータ |
-| `suction_thrust_lab/model.py` | MJCF生成、接触形状、外観 |
-| `suction_thrust_lab/physics.py` | ファン・漏れ・電池・ガスタンク |
-| `suction_thrust_lab/simulation.py` | シール判定、外力入力、ログ |
-| `suction_thrust_lab/__main__.py` | Viewer、CLI、デモシーケンス |
-| `tests/test_physics.py` | 理論比較とデモの回帰テスト |
-| `suction_thrust_lab/halfpipe.py` / `halfpipe.json` | 曲面路面、四輪駆動、飛行制御と専用設定 |
-| `suction_thrust_lab/roadster.py` / `roadster.json` | 実車サイズの形状生成と専用設定 |
-| `scripts/record_halfpipe.py` | ミニ四駆・実車サイズの動画・CSV収録 |
-| `ROADMAP.md` | Phase 2以降の計画 |
-
-外観は`model.py`の`visual_geoms()`を入口に差し替えられます。STL/OBJを使う場合はMJCFの`asset/mesh`を追加して、非接触・質量0のvisuals内に配置してください。Phase 1の寸法は固定です。実車相当デモには専用の形状生成と寸法設定を用意しています。吸着スカートやノズル位置を変更する場合も形状との整合性を確認してください。
-
-MuJoCoとの接続は公式資料の[Python Viewer API](https://mujoco.readthedocs.io/en/latest/python.html)と[外力を含む運動方程式](https://mujoco.readthedocs.io/en/latest/computation/index.html)を参照しています。
-
-## デモ動画
-
-[天井吸着・浮上のまとめ動画](output/videos/suction-thrust-lab-demos.mp4)を保存しています。各デモを等速で再生し、続いて0.25倍速で再生します。表示時刻と数値はシミュレーション時間です。天井デモには車体を追尾する拡大表示を付けています。
-
-再収録にはシステムの`ffmpeg`（libx264、drawtext、subtitles対応）とEGL環境を使います。Pythonライブラリの追加は不要です。
+| `suction_thrust_lab/default.json` | Basic miniature floor/ceiling/lift experiments |
+| `suction_thrust_lab/halfpipe.json` | Miniature seven-jet roll sequence |
+| `suction_thrust_lab/full_size.json` | Experimental full-size sequence |
 
 ```bash
-MUJOCO_GL=egl .venv/bin/python scripts/record_demos.py
+mkdir -p configs
+cp suction_thrust_lab/halfpipe.json configs/experiment.json
+python -m suction_thrust_lab --demo halfpipe --config configs/experiment.json --headless --csv output/experiment.csv
 ```
 
-録画は既存の物理計算をMuJoCo Rendererで描画します。スロー再生は映像の再生速度のみを変更し、物理パラメータは変更しません。
+Nozzle positions, force directions and limits are explicit. The half-pipe allocator supports the documented seven-nozzle layout/order, not arbitrary replacements. Basic vehicle geometry has fixed dimensions; use the dedicated full-size profile for the larger model. Visual-only geometry can be replaced through `model.py`/`full_size.py`, but external assets require a documented source and permission before inclusion.
 
-曲面の判定とパラメータ更新はMuJoCo公式の[mj_ray・mj_setConst API](https://mujoco.readthedocs.io/en/stable/APIreference/APIfunctions.html)を利用しています。
+CSV data includes time, position, quaternion (w,x,y,z), world linear velocity, body angular velocity, suction force/pressure, fan/leak flow, power/battery energy, per-nozzle thrust, gas mass/pressure, exhaust energy and contact load. Half-pipe logs add stage, changing mass, roll angle, motor energy, allocation residual and first/maximum touchdown speed. Forces describe the preceding integration interval; pose/contact values are refreshed at the row's time. Contact load is the sum of contact-normal magnitudes, not a world-z force.
+
+## Roadmap
+
+[ROADMAP.md](ROADMAP.md) separates current examples from planned work: measured fan/seal data, real-gas and thermal tank models, hardware mass/volume budgets, general constrained control, disturbance rejection, wall/ceiling driving, hover controls, and continuous floor-to-ceiling attachment. Additional calibrated full-size models are planned. CFD, ROS 2, reinforcement learning and a web UI are outside the current scope.
+
+## Inspiration
+
+This project was inspired by Tesla's Roadster demonstrations and its proposed use of fan-generated downforce and cold-gas thrusters. Some scenarios, including the 180-degree loop and aerial roll, take inspiration from maneuvers shown in Tesla's presentations.
+
+The simulation models, controllers and primitive environments were implemented within this project for educational and experimental use. The reviewed history and source contain local Python/MJCF-generating implementations, not imported Tesla code or CAD. This is evidence of the implementation's provenance, not a guarantee about every possible third-party right; see [the publication review](docs/PUBLICATION_REVIEW.md).
+
+Verified official references:
+
+- [Tesla Roadster product page](https://www.tesla.com/roadster): official product/presentation context; specifications may change.
+- [Tesla's official 1:18 Roadster model](https://shop.tesla.com/en_ca/product/diecast-1_18-scale-roadster?sku=1524001-00-A): published model dimensions are 252 × 109.5 × 70 mm. Multiplying by 18 informed the example's 4.536 × 1.971 × 1.260 m dimensions. This is an inference from a scale model, not a confirmed production-car dimension set.
+
+The exact official video URL for the supplied loop sequence has not been verified, so no guessed video URL is listed. No footage or images from those references are included.
+
+Mass, pressure, tank volume, exhaust velocity, fan performance, nozzle count/placement/limits, motor parameters and control gains are project assumptions. Even a value that resembles a public claim is treated here as an experimental input, not as Tesla's engineering specification. The implementation does not reproduce Tesla's proprietary designs or undisclosed control system.
+
+## Disclaimer
+
+This is an independent, unofficial open-source project. It is not affiliated with, sponsored by, or endorsed by Tesla, Inc., Tamiya, Inc., or the creators and publishers of Bakusou Kyoudai Let's & Go!!.
+
+Names in the Inspiration section identify external references only. The vehicles and courses in this repository are generic primitive models. Non-affiliation does not grant permission to use third-party material; assets with unverified permissions are excluded. Simulation results do not establish that a real vehicle can safely perform these maneuvers.
+
+## License
+
+MIT is the intended license for the project's own code, configurations and documentation. Copyright-holder confirmation is pending; the prepared text is in [the MIT draft](docs/MIT-LICENSE.txt). Do not publish the project as MIT-licensed until that confirmation is recorded and the final `LICENSE` is installed.
+
+Dependencies retain their own licenses. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records the reviewed dependencies and binary-bundling caveats. Source/wheel distributions are intended to contain only project files, not dependency binaries or generated media. [Publication review](docs/PUBLICATION_REVIEW.md) lists remaining human checks.

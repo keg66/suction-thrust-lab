@@ -1,7 +1,25 @@
 .venv/
+venv/
 __pycache__/
+*.py[cod]
 .pytest_cache/
+.coverage
+htmlcov/
 *.egg-info/
+build/
+dist/
 output/
-
 MUJOCO_LOG.TXT
+
+# Local credentials and editor/agent state are never publication inputs.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.aws/
+.agents/
+.codex/
+.idea/
+.vscode/
+.DS_Store
