@@ -23,8 +23,8 @@ def load_config(path=None):
         raise ValueError('Tank pressure must exceed ambient pressure')
     if not 0 <= s['min_gap'] <= s['max_gap'] or not 0 < s['alignment_cos'] <= 1 or s['battery_energy'] < 0:
         raise ValueError('Invalid seal/battery parameters')
-    if not np.allclose(c['dimensions'], [.147, .09, .041]):
-        raise ValueError('Phase 1 primitive geometry has fixed dimensions; edit model.py when resizing')
+    if not np.allclose(c['dimensions'], [.147, .09, .041]) and c.get('vehicle') != 'roadster':
+        raise ValueError('Phase 1 primitive geometry has fixed dimensions; use the roadster profile for full scale')
     if len({t['name'] for t in c['thrusters']}) != len(c['thrusters']):
         raise ValueError('Thruster names must be unique')
     for t in c['thrusters']:
@@ -38,6 +38,8 @@ def load_config(path=None):
 class Simulation:
     def __init__(self, config=None, demo='lift', xml=None):
         self.c = config or load_config()
+        if self.c.get('vehicle') == 'roadster' and xml is None:
+            raise ValueError('Use --demo roadster for the full-size vehicle model')
         self.model = mujoco.MjModel.from_xml_string(xml or make_xml(self.c))
         self.data = mujoco.MjData(self.model)
         self.car = self.model.body('car').id

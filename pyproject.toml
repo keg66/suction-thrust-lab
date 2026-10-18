@@ -19,7 +19,7 @@ suction-thrust-lab = "suction_thrust_lab.__main__:main"
 include = ["suction_thrust_lab*"]
 
 [tool.setuptools.package-data]
-suction_thrust_lab = ["default.json", "halfpipe.json"]
+suction_thrust_lab = ["default.json", "halfpipe.json", "roadster.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

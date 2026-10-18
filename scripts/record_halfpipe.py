@@ -2,6 +2,7 @@
 import os
 os.environ.setdefault('MUJOCO_GL','egl')
 import csv
+import argparse
 from pathlib import Path
 import subprocess
 import sys
@@ -15,26 +16,37 @@ from record_demos import timestamp
 def main():
     out=Path(__file__).resolve().parents[1]/'output'/'videos'
     out.mkdir(parents=True,exist_ok=True)
-    s=HalfpipeSimulation()
-    fps,width,height=60,960,720
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--demo',choices=['halfpipe','roadster'],default='halfpipe')
+    args=parser.parse_args()
+    if args.demo=='roadster':
+        from suction_thrust_lab.roadster import RoadsterSimulation
+        s=RoadsterSimulation()
+    else:
+        s=HalfpipeSimulation()
+    full_size=args.demo=='roadster'
+    prefix='roadster' if full_size else 'halfpipe-roll'
+    duration=40 if full_size else 24
+    fps,width,height=30 if full_size else 60,960,720
+    L=s.length_scale
     camera=mujoco.MjvCamera()
-    camera.lookat[:]=[-.12,0,.45]
-    camera.distance=1.95
+    camera.lookat[:]=np.array([-.12,0,.45])*L
+    camera.distance=1.95*L
     camera.azimuth,camera.elevation=95,-7
     close=mujoco.MjvCamera()
-    close.distance,close.azimuth,close.elevation=.29,145,-12
-    raw=out/'halfpipe-roll-raw.mp4'
+    close.distance,close.azimuth,close.elevation=.29*L,145,-12
+    raw=out/(prefix+'-raw.mp4')
     proc=subprocess.Popen(['ffmpeg','-hide_banner','-loglevel','error','-y','-f','rawvideo',
         '-pix_fmt','rgb24','-s',f'{width+320}x{height}','-r',str(fps),'-i','-',
         '-an','-c:v','libx264','-crf','18','-pix_fmt','yuv420p',str(raw)],stdin=subprocess.PIPE)
     captions=[]
-    with (out/'halfpipe-roll.csv').open('w',newline='') as file:
+    with (out/(prefix+'.csv')).open('w',newline='') as file:
         writer=csv.DictWriter(file,fieldnames=s.row().keys())
         writer.writeheader()
         writer.writerow(s.row())
         try:
             with mujoco.Renderer(s.model,height,width) as renderer:
-                for frame in range(24*fps):
+                for frame in range(duration*fps):
                     target=frame/fps
                     while s.data.time+1e-9<target:
                         s.advance()
@@ -54,8 +66,10 @@ def main():
                         state={'climb':'SUCTION + WHEEL CLIMB','depart':'EDGE DEPARTURE',
                                'flip':'BOTTOM-JET ROLL 180','recover':'BRAKE + SLOW FLIGHT','descend':'CONTROLLED DESCENT','landed':'LANDED'}[s.stage]
                         row=s.row()
+                        gas_text=f'{s.gas.used:.1f} kg' if full_size else f'{s.gas.used*1000:.1f} g'
+                        suction_text=f'{s.suction.force/1000:.1f} kN' if full_size else f'{s.suction.force:.2f} N'
                         text=(f'{state}   t={target:.1f}s   z={s.data.qpos[2]:.3f} m\n'
-                              f'Suction {s.suction.force:.2f} N | Gas used {s.gas.used*1000:.1f} g | Roll {row["roll_from_launch_deg"]:.0f} deg')
+                              f'Suction {suction_text} | Gas used {gas_text} | Roll {row["roll_from_launch_deg"]:.0f} deg')
                         captions.append(f'{len(captions)+1}\n{timestamp(target)} --> {timestamp(target+2/fps)}\n{text}\n')
                     if frame%(5*fps)==0:
                         print(f'Rendered {target:.0f}s: {s.stage}',flush=True)
@@ -64,22 +78,24 @@ def main():
     if proc.wait(): raise RuntimeError('ffmpeg failed')
     if s.stage!='landed' or s.failure:
         raise RuntimeError(f'Demo failed: {s.stage} {s.failure}')
-    subtitle=out/'halfpipe-roll.srt'
+    subtitle=out/(prefix+'.srt')
     subtitle.write_text('\n'.join(captions))
+    title='ROADSTER SCALE / ASSUMED 7 JETS' if full_size else 'SUCTION & THRUST LAB / 7 JETS / ROLL 180'
     filters=(f"subtitles={subtitle}:force_style='FontSize=15,Outline=2,MarginV=15',"
-             "drawtext=text='SUCTION & THRUST LAB / 7 JETS / ROLL 180':x=24:y=18:fontsize=27:fontcolor=white:box=1:boxcolor=black@0.6,"
+             f"drawtext=text='{title}':x=24:y=18:fontsize=27:fontcolor=white:box=1:boxcolor=black@0.6,"
              "drawtext=text='4 underside + 2 front-side + 1 rear | Blue arrows = exhaust':x=24:y=55:fontsize=18:fontcolor=white:box=1:boxcolor=black@0.6,"
              "drawtext=text='REAL TIME 1x':x=24:y=90:fontsize=20:fontcolor=yellow,"
              "drawtext=text='TRACKING CLOSE-UP':x=980:y=88:fontsize=20:fontcolor=white")
-    final=out/'halfpipe-roll.mp4'
+    final=out/(prefix+'.mp4')
     subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-i',str(raw),'-vf',filters,
                     '-c:v','libx264','-crf','20','-pix_fmt','yuv420p','-movflags','+faststart',str(final)],check=True)
     raw.unlink()
     # Replay the brief gravity-driven roll without changing the physical trajectory.
-    subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-ss','14.4','-t','1.5',
+    subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-ss',str(max(0.,s.flight_start-.2)),'-t',str(.33*s.time_scale+1.),
         '-i',str(final),'-vf',"setpts=4*(PTS-STARTPTS),fps=60,drawbox=x=20:y=85:w=300:h=32:color=black:t=fill,drawtext=text='SLOW REPLAY 0.25x':x=24:y=90:fontsize=20:fontcolor=yellow",
-        '-c:v','libx264','-crf','20','-pix_fmt','yuv420p','-movflags','+faststart',str(out/'halfpipe-roll-slow.mp4')],check=True)
-    print(f'{final}\nTouchdown: {s.landing_speed:.4f} m/s; gas used: {s.gas.used*1000:.2f} g')
+        '-c:v','libx264','-crf','20','-pix_fmt','yuv420p','-movflags','+faststart',str(out/(prefix+'-slow.mp4'))],check=True)
+    gas_text=f'{s.gas.used:.2f} kg' if full_size else f'{s.gas.used*1000:.2f} g'
+    print(f'{final}\nTouchdown: {s.landing_speed:.4f} m/s; gas used: {gas_text}')
 
 
 if __name__=='__main__':

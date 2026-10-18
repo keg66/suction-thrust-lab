@@ -1,0 +1,163 @@
+{
+  "timestep": 0.001,
+  "gravity": 9.81,
+  "mass": 1600.0,
+  "dimensions": [
+    4.536,
+    1.971,
+    1.26
+  ],
+  "ceiling_height": 30.0,
+  "suction": {
+    "area": 5.0,
+    "half_extents": [
+      1.9285714285714286,
+      0.8760000000000001
+    ],
+    "bottom_z": -0.63,
+    "max_gap": 0.061714285714285715,
+    "min_gap": 0.0005,
+    "alignment_cos": 0.995,
+    "max_pressure": 16000.0,
+    "max_flow": 2.0,
+    "volume": 0.08,
+    "discharge_coefficient": 0.65,
+    "air_density": 1.2,
+    "ambient_pressure": 101325.0,
+    "response_time": 0.02,
+    "max_power": 30000.0,
+    "battery_energy": 36000000.0
+  },
+  "gas": {
+    "volume": 0.6,
+    "initial_pressure": 70000000.0,
+    "temperature": 293.15,
+    "gas_constant": 296.8,
+    "ambient_pressure": 101325.0,
+    "exhaust_velocity": 600.0
+  },
+  "thrusters": [
+    {
+      "name": "lift_fl",
+      "position": [
+        1.3885714285714286,
+        0.5475000000000001,
+        -0.36878048780487804
+      ],
+      "direction": [
+        0,
+        0,
+        1
+      ],
+      "max_thrust": 60000.0
+    },
+    {
+      "name": "lift_fr",
+      "position": [
+        1.3885714285714286,
+        -0.5475000000000001,
+        -0.36878048780487804
+      ],
+      "direction": [
+        0,
+        0,
+        1
+      ],
+      "max_thrust": 60000.0
+    },
+    {
+      "name": "lift_rl",
+      "position": [
+        -1.3885714285714286,
+        0.5475000000000001,
+        -0.36878048780487804
+      ],
+      "direction": [
+        0,
+        0,
+        1
+      ],
+      "max_thrust": 60000.0
+    },
+    {
+      "name": "lift_rr",
+      "position": [
+        -1.3885714285714286,
+        -0.5475000000000001,
+        -0.36878048780487804
+      ],
+      "direction": [
+        0,
+        0,
+        1
+      ],
+      "max_thrust": 60000.0
+    },
+    {
+      "name": "side_left",
+      "position": [
+        1.6971428571428573,
+        0.7665000000000002,
+        0.0
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "max_thrust": 20000.0
+    },
+    {
+      "name": "side_right",
+      "position": [
+        1.6971428571428573,
+        -0.7665000000000002,
+        0.0
+      ],
+      "direction": [
+        0,
+        1,
+        0
+      ],
+      "max_thrust": 20000.0
+    },
+    {
+      "name": "boost",
+      "position": [
+        -1.8514285714285714,
+        0.0,
+        0.0
+      ],
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "max_thrust": 8000.0
+    }
+  ],
+  "ramp": {
+    "radius": 13.885714285714286,
+    "segments": 128,
+    "drive_speed": 2.6663618873449484,
+    "skirt_travel": 0.18514285714285714
+  },
+  "vehicle": "roadster",
+  "wheel_mass": 20.0,
+  "scaling": {
+    "length": 30.857142857142858,
+    "time": 5.5549205986353085,
+    "torque": 411428.5714285715
+  },
+  "flight": {
+    "recover_duration": 6.0,
+    "descend_duration": 5.0,
+    "position_response_time": 3.0,
+    "timeout": 20.0,
+    "touchdown_limit": 0.5,
+    "attitude_response_time": 4.0,
+    "horizontal_acceleration_limit": 4.0,
+    "acceleration_feedforward": true,
+    "settle_speed": 0.1
+  }
+}
