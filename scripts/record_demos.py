@@ -12,7 +12,7 @@ import mujoco
 import numpy as np
 from suction_thrust_lab.simulation import Simulation, controls
 
-OUT = Path(__file__).resolve().parents[1] / 'output' / 'videos'
+OUT = Path(__file__).resolve().parents[1] / 'output' / 'videos' / 'suction-thrust-lab'
 FPS = 60
 WIDTH, HEIGHT = 960, 720
 
@@ -62,7 +62,7 @@ def record(demo):
         raise RuntimeError('ffmpeg encoding failed')
     subtitle = OUT / f'{demo}.srt'
     subtitle.write_text('\n'.join(captions))
-    title = 'DEMO 2 - CEILING SUCTION' if demo == 'ceiling' else 'DEMO 3 - COLD GAS LIFT'
+    title = 'SUCTION & THRUST LAB / CEILING SUCTION' if demo == 'ceiling' else 'SUCTION & THRUST LAB / COLD GAS LIFT'
     note = 'Starts inverted, fan pre-spun | inset follows car' if demo == 'ceiling' else '0.3 s burn | finite gas | no position animation'
     # Caption physical time first, then duplicate frames for a clearly labelled slow replay.
     filters = (f"[0:v]subtitles={subtitle}:force_style='FontSize=16,Outline=2,MarginV=14',"
