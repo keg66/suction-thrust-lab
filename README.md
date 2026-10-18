@@ -36,6 +36,18 @@ These previews include the complete recorded sequence and the appended, labelled
 
 ![Experimental full-size vehicle performs the suction climb, roll and controlled landing, followed by a slow replay.](docs/media/full-size-roll180.gif)
 
+### Tornado overtaking · miniature · 21.0 seconds
+
+Fourteen rolls over three seconds, overtaking all six rivals and landing in the lead. Cumulative gas use is shown in grams.
+
+![Miniature vehicle overtakes six rivals with a tornado roll, showing race position, cumulative gas use and a slow replay.](docs/media/mini-vehicle-tornado.gif)
+
+### Tornado overtaking · full-size · 21.4 seconds
+
+Six rolls over three seconds at about 216 km/h, overtaking all six rivals. Cumulative gas use is shown in kilograms.
+
+![Full-size vehicle overtakes six rivals with a tornado roll and lands in the lead, showing race position, cumulative gas use and a slow replay.](docs/media/full-size-tornado.gif)
+
 The full-size hardware and control parameters are experimental assumptions, not production-vehicle specifications. See [preview provenance and regeneration](docs/media/README.md).
 
 ### Scenarios
@@ -58,7 +70,7 @@ Both tornado videos show cumulative gas expelled by all thrusters: grams for the
 
 The ceiling example begins inverted with the fan already spinning and zero initial pressure difference. `--cold-fan` demonstrates failure to seal during startup. The lift pulse is not a hover controller. Half-pipe flight uses four underside jets, two front lateral jets and one rear jet. There are no top-mounted jets in those examples. Their instantaneous wrench matrix has rank five; lateral force and yaw torque are coupled.
 
-Full-resolution MP4 recordings are generated locally under `output/videos/suction-thrust-lab/` and are excluded from source/wheel distributions. The two README GIF previews are versioned under `docs/media/` and included in the source distribution. To regenerate the recordings:
+Full-resolution MP4 recordings are generated locally under `output/videos/suction-thrust-lab/` and are excluded from source/wheel distributions. The four README GIF previews are versioned under `docs/media/` and included in the source distribution. To regenerate the recordings:
 
 ```bash
 MUJOCO_GL=egl python scripts/record_demos.py
@@ -194,4 +206,4 @@ Names in the Inspiration section identify external references only. The vehicles
 
 The project's own code, configurations, documentation and generated README previews are licensed under the [MIT License](LICENSE). Copyright (c) 2026 keg66.
 
-Dependencies retain their own licenses. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records the reviewed dependencies and binary-bundling caveats. Source distributions include the two README GIF previews. Runtime wheels exclude media, and neither source nor wheel distributions bundle dependency binaries. [Publication review](docs/PUBLICATION_REVIEW.md) lists remaining human checks.
+Dependencies retain their own licenses. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records the reviewed dependencies and binary-bundling caveats. Source distributions include the four README GIF previews. Runtime wheels exclude media, and neither source nor wheel distributions bundle dependency binaries. [Publication review](docs/PUBLICATION_REVIEW.md) lists remaining human checks.
