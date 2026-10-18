@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'">
+<title>Control laws — Suction &amp; Thrust Lab</title><style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#172033;background:#f2f5fa;font-size:16px;line-height:1.75}
+*{box-sizing:border-box}body{margin:0}main{max-width:1110px;margin:32px auto;padding:40px 46px 48px;background:white;border:1px solid #dbe3ee;border-radius:18px}
+.brand{font-size:13px;font-weight:750;letter-spacing:.12em;color:#1d4ed8;text-transform:uppercase}.eyebrow{font-size:13px;color:#64748b;margin:22px 0 4px}h1{font-size:36px;line-height:1.2;letter-spacing:-.03em;margin:0 0 20px}h2{font-size:23px;line-height:1.35;margin:44px 0 14px;letter-spacing:-.015em}p{margin:16px 0}a{color:#1d4ed8;text-underline-offset:3px}code{font-family:ui-monospace,monospace;font-size:.9em;background:#eff3f8;padding:2px 5px;border-radius:4px}strong{font-weight:700}
+figure{margin:22px 0;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;overflow-x:auto}figure svg{display:block;max-width:100%;height:auto;margin:auto}figcaption{font-size:13px;color:#526176;padding:8px 6px 2px;line-height:1.6}.table-wrap{overflow-x:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.6}th,td{border:1px solid #dbe3ee;padding:11px 13px;text-align:left;vertical-align:top}th{background:#f1f5f9}tbody tr:nth-child(even){background:#fafcff}.reading-note{border-left:3px solid #93c5fd;padding-left:14px;color:#526176;font-size:14px}footer{border-top:1px solid #e2e8f0;margin-top:32px;padding-top:16px;color:#64748b;font-size:13px}
+@media(max-width:740px){main{margin:0;padding:26px 18px;border:0;border-radius:0}h1{font-size:29px}h2{font-size:21px}figure svg{min-width:820px}figure{padding:6px}}
+@media print{:root{background:white;font-size:11pt}main{margin:0;padding:0;border:0;max-width:none}h2{break-after:avoid}figure,table{break-inside:avoid}figure{padding:0;border:0}a{color:inherit}footer{font-size:9pt}}
+</style></head><body>
+<main><div class="brand">Suction &amp; Thrust Lab</div><p class="eyebrow">Visual summary · Standalone document</p>
+<p class="reading-note"><a lang="ja" href="CONTROL_SUMMARY.ja.md">日本語版（Markdown）</a></p>
+<h1>Control laws</h1>
+<p>The half-pipe controller follows a staged climb, departure, roll and landing sequence. It turns errors into force/torque requests, then distributes those requests to the jets that actually exist. This page gives the intuition; the <a href="CONTROL.md">detailed control document</a> provides equations, timing, scaling and exact success criteria.</p>
+<h2>1. One maneuver, six stages</h2>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="1000" height="150" viewBox="0 0 1000 150" role="img" aria-labelledby="flow-stages-title"><title id="flow-stages-title">Climb, depart, roll, recover, descend and land.</title><defs><marker id="flow-stages-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker></defs><rect width="1000" height="150" rx="12" fill="#f8fafc"/>
+<rect x="20" y="20" width="140" height="110" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="90.0" y="65.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">1. Climb</text>
+<text x="90.0" y="85.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Fan + wheels</text>
+<path d="M160,75 H180" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-stages-arrow)"/>
+<rect x="180" y="20" width="140" height="110" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="250.0" y="65.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">2. Depart</text>
+<text x="250.0" y="85.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Rear jet</text>
+<path d="M320,75 H340" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-stages-arrow)"/>
+<rect x="340" y="20" width="140" height="110" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="410.0" y="65.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">3. Roll</text>
+<text x="410.0" y="85.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Unequal jets</text>
+<path d="M480,75 H500" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-stages-arrow)"/>
+<rect x="500" y="20" width="140" height="110" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="570.0" y="65.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">4. Recover</text>
+<text x="570.0" y="85.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Brake + stabilize</text>
+<path d="M640,75 H660" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-stages-arrow)"/>
+<rect x="660" y="20" width="140" height="110" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="730.0" y="65.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">5. Descend</text>
+<text x="730.0" y="85.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Lower target</text>
+<path d="M800,75 H820" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-stages-arrow)"/>
+<rect x="820" y="20" width="140" height="110" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+<text x="890.0" y="65.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">6. Landed</text>
+<text x="890.0" y="85.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Gas off</text>
+</svg></figure>
+<p>Departure starts when the actual seal is lost above the height threshold. Later stages use elapsed time and physical contact/state checks. The controller saves the launch pose as a reference; it never teleports the vehicle to the next stage.</p>
+<p>This is the continuous half-pipe example. Basic <code>ceiling</code>, <code>downforce</code> and <code>lift</code> use scheduled fan/thrust commands instead of this flight controller.</p>
+<h2>2. Why the roll loses height</h2>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="1260" height="430" viewBox="0 0 1260 430" role="img" aria-labelledby="title desc"><title id="title">Seven jets and a gravity-limited roll</title><desc id="desc">Left: top-view positions of four bottom jets, two inward-force front-side jets and one forward-force rear jet. Right: inverted, rolling and upright end views show bottom-jet force rotating with the car while gravity stays downward.</desc><defs><marker id="suction" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#2563eb"/></marker><marker id="normal" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#15803d"/></marker><marker id="gravity" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#475569"/></marker><marker id="friction" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#c2410c"/></marker></defs><style>text{font-family:DejaVu Sans,sans-serif;fill:#0f172a}.small{font-size:14px}.note{font-size:16px}.heading{font-size:21px;font-weight:bold}</style><rect width="1260" height="430" fill="#f8fafc"/>
+<rect x="12" y="12" width="465" height="405" rx="12" fill="white" stroke="#cbd5e1"/><rect x="489" y="12" width="759" height="405" rx="12" fill="white" stroke="#cbd5e1"/>
+<text x="245" y="47" class="heading" text-anchor="middle">Seven jets: top view</text>
+<text x="868" y="47" class="heading" text-anchor="middle">Roll: view along the body x axis</text>
+<text x="245" y="83" class="note" text-anchor="middle">Front / +x</text>
+<rect x="161" y="111" width="168" height="226" rx="28" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
+<circle cx="188" cy="174" r="14" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/><circle cx="188" cy="174" r="4" fill="#2563eb"/>
+<text x="188" y="208" class="small" text-anchor="middle">FL</text>
+<circle cx="302" cy="174" r="14" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/><circle cx="302" cy="174" r="4" fill="#2563eb"/>
+<text x="302" y="208" class="small" text-anchor="middle">FR</text>
+<circle cx="188" cy="281" r="14" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/><circle cx="188" cy="281" r="4" fill="#2563eb"/>
+<text x="188" y="315" class="small" text-anchor="middle">RL</text>
+<circle cx="302" cy="281" r="14" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/><circle cx="302" cy="281" r="4" fill="#2563eb"/>
+<text x="302" y="315" class="small" text-anchor="middle">RR</text>
+<path d="M146,125 L211,125" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+<path d="M344,125 L279,125" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+<text x="100" y="111" class="small" text-anchor="middle">−y</text>
+<text x="390" y="111" class="small" text-anchor="middle">+y</text>
+<circle cx="146" cy="125" r="5" fill="#2563eb"/><circle cx="344" cy="125" r="5" fill="#2563eb"/>
+<path d="M245,348 L245,294" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+<text x="273" y="354" class="small" text-anchor="start">Rear: +x</text>
+<text x="245" y="382" class="small" text-anchor="middle">⊙ = bottom-jet force toward body +z</text>
+<text x="245" y="404" class="small" text-anchor="middle">Arrows show vehicle force, not exhaust</text>
+<text x="622" y="88" class="note" text-anchor="middle">1. Inverted</text>
+<g transform="translate(622 184) rotate(180)"><rect x="-55" y="-10" width="110" height="20" rx="6" fill="#cbd5e1" stroke="#334155" stroke-width="2"/>
+<circle cx="-35" cy="12" r="5" fill="#2563eb"/>
+<path d="M-35,12 L-35,-20" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+<circle cx="35" cy="12" r="5" fill="#2563eb"/>
+<path d="M35,12 L35,-53" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+</g>
+<path d="M703,169 L703,245" fill="none" stroke="#475569" stroke-width="4" marker-end="url(#gravity)"/>
+<text x="703" y="268" class="small" text-anchor="middle" style="fill:#475569">mg</text>
+<text x="866" y="88" class="note" text-anchor="middle">2. Rolling</text>
+<g transform="translate(866 184) rotate(90)"><rect x="-55" y="-10" width="110" height="20" rx="6" fill="#cbd5e1" stroke="#334155" stroke-width="2"/>
+<circle cx="-35" cy="12" r="5" fill="#2563eb"/>
+<path d="M-35,12 L-35,-20" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+<circle cx="35" cy="12" r="5" fill="#2563eb"/>
+<path d="M35,12 L35,-53" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+</g>
+<path d="M947,169 L947,245" fill="none" stroke="#475569" stroke-width="4" marker-end="url(#gravity)"/>
+<text x="947" y="268" class="small" text-anchor="middle" style="fill:#475569">mg</text>
+<text x="1110" y="88" class="note" text-anchor="middle">3. Upright</text>
+<g transform="translate(1110 184) rotate(0)"><rect x="-55" y="-10" width="110" height="20" rx="6" fill="#cbd5e1" stroke="#334155" stroke-width="2"/>
+<circle cx="-35" cy="12" r="5" fill="#2563eb"/>
+<path d="M-35,12 L-35,-53" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+<circle cx="35" cy="12" r="5" fill="#2563eb"/>
+<path d="M35,12 L35,-53" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+</g>
+<path d="M1191,169 L1191,245" fill="none" stroke="#475569" stroke-width="4" marker-end="url(#gravity)"/>
+<text x="1191" y="268" class="small" text-anchor="middle" style="fill:#475569">mg</text>
+<path d="M730,184 L754,184" fill="none" stroke="#c2410c" stroke-width="4" marker-end="url(#friction)"/>
+<path d="M974,184 L998,184" fill="none" stroke="#c2410c" stroke-width="4" marker-end="url(#friction)"/>
+<text x="868" y="322" class="note" text-anchor="middle">Unequal bottom jets create roll torque and net force.</text>
+<text x="868" y="350" class="note" text-anchor="middle">Inverted: bottom-jet force points downward.</text>
+<text x="868" y="378" class="note" text-anchor="middle">Upright: bottom jets can brake the fall and support weight.</text>
+<text x="868" y="405" class="small" text-anchor="middle">Concept sketches, not measured geometry or a trajectory.</text>
+</svg>
+<figcaption>Left: top view of four underside jets, two front lateral jets and one rear jet. Right: bottom-jet force points downward when inverted, sideways during roll and upward when upright, while gravity remains downward.</figcaption></figure>
+<p>The roll is around the vehicle&#x27;s <strong>front-to-rear axis</strong>, keeping its launch forward direction. There are no top jets. While inverted, bottom-jet force points downward in the world frame. Firing one side more strongly creates roll torque, but also adds net force; it cannot independently support weight.</p>
+<p>The controller therefore allows altitude loss during inversion, then requests upward braking once almost upright. Success depends on having enough height, remaining gas, thrust and attitude authority to recover before touching the floor.</p>
+<p>In the nozzle sketch, arrows show <strong>force on the vehicle</strong>, not exhaust. The four circle-and-dot symbols represent bottom-jet force toward body +z, out of the top-view page. The front side jets push laterally; the rear jet pushes forward.</p>
+<h2>3. Feedback: correct the error and slow the motion</h2>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="1000" height="240" viewBox="0 0 1000 240" role="img" aria-labelledby="flow-feedback-title"><title id="flow-feedback-title">Position and attitude errors drive PD feedback, allocation and physical motion; measured state closes the loop.</title><defs><marker id="flow-feedback-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker></defs><rect width="1000" height="240" rx="12" fill="#f8fafc"/>
+<rect x="20" y="20" width="220" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="130.0" y="42.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Position and</text>
+<text x="130.0" y="62.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">attitude targets</text>
+<rect x="280" y="20" width="180" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="370.0" y="42.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Compare with</text>
+<text x="370.0" y="62.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">actual state</text>
+<rect x="500" y="20" width="200" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="600.0" y="42.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">PD correction</text>
+<text x="600.0" y="62.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">and damping</text>
+<rect x="760" y="20" width="220" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="870.0" y="42.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Force and</text>
+<text x="870.0" y="62.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">torque request</text>
+<rect x="760" y="150" width="220" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="870.0" y="172.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Allocate within</text>
+<text x="870.0" y="192.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">nozzle limits</text>
+<rect x="500" y="150" width="200" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="600.0" y="172.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">MuJoCo integrates</text>
+<text x="600.0" y="192.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">actual motion</text>
+<rect x="280" y="150" width="180" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="370.0" y="172.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Actual state and</text>
+<text x="370.0" y="192.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">velocities</text>
+<path d="M240,52 H280" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-feedback-arrow)"/>
+<path d="M460,52 H500" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-feedback-arrow)"/>
+<path d="M700,52 H760" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-feedback-arrow)"/>
+<path d="M870,85 V150" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-feedback-arrow)"/>
+<path d="M760,182 H700" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-feedback-arrow)"/>
+<path d="M500,182 H460" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-feedback-arrow)"/>
+<path d="M370,150 V85" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-feedback-arrow)"/>
+</svg></figure>
+<p><strong>P — correction:</strong> a position or orientation error asks for motion back toward the target.</p>
+<p><strong>D — damping:</strong> velocity feedback brakes that motion so the vehicle does not simply overshoot. During position tracking, the controller also adds gravity compensation. The full-size preset adds reference-acceleration feed-forward; the planned roll includes angular-rate/acceleration references.</p>
+<p>For recovery, the horizontal target moves toward the landing area while a height target requests recovery from the fall. The descent target then lowers smoothly. The recovery height target can step upward; the vehicle&#x27;s actual position stays continuous.</p>
+<p>To move sideways or backward, the controller mainly <strong>tilts the bottom jets</strong> so their force has a horizontal component. It is not using an invisible lateral force. Position and attitude feedback are coupled: until the body has tilted, the requested world force may not be achieved.</p>
+<h2>4. Seven jets do not provide seven independent controls</h2>
+<div class="table-wrap"><table><thead><tr><th>Requested action</th><th>How it is produced</th><th>Coupling or limit</th></tr></thead><tbody><tr><td>Common lift</td><td>Four underside jets together</td><td>Force only toward body +z; tank pressure limits output</td></tr><tr><td>Roll / pitch</td><td>Different underside-jet strengths</td><td>May require extra common thrust; clipping changes the result</td></tr><tr><td>Yaw</td><td>One of the two front lateral jets</td><td>Also produces lateral force</td></tr><tr><td>Forward departure</td><td>Rear jet</td><td>Cannot reverse its force</td></tr><tr><td>Horizontal recovery</td><td>Tilt the body and bottom-jet force</td><td>Requires attitude tracking and time</td></tr></tbody></table></div>
+<p>The layout&#x27;s instantaneous force/torque matrix has <strong>rank five</strong>. In particular, front lateral force and yaw torque are coupled. A planned trajectory can use changing attitude over time, but the controller cannot independently command every force and torque at the same instant.</p>
+<p>The allocator distributes roll/pitch requests among the four bottom jets, adds a common positive bias if a request would otherwise need negative thrust, and clips each jet to its current pressure-dependent limit. This can produce more net force than requested, or too little torque when saturated. <code>allocation_error</code> records the predicted mismatch; its mixed force/torque norm has no single unit.</p>
+<h2>5. What counts as success?</h2>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="1000" height="310" viewBox="0 0 1000 310" role="img" aria-labelledby="flow-success-title"><title id="flow-success-title">Landing is accepted only after contact, settling, attitude and failure checks pass.</title><defs><marker id="flow-success-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker></defs><rect width="1000" height="310" rx="12" fill="#f8fafc"/>
+<rect x="20" y="115" width="215" height="70" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="127.5" y="140.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Descent and</text>
+<text x="127.5" y="160.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">floor contact</text>
+<polygon points="465,77.5 630.0,150 465,222.5 300.0,150" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="465" y="140" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="15">Contact, settling, attitude</text>
+<text x="465" y="160" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="15">and failure checks pass?</text>
+<rect x="735" y="35" width="245" height="75" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+<text x="857.5" y="62.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Landed with</text>
+<text x="857.5" y="82.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">no reported failure</text>
+<rect x="735" y="210" width="245" height="75" rx="10" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
+<text x="857.5" y="237.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Continue tracking</text>
+<text x="857.5" y="257.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">or report failure</text>
+<path d="M235,150 H300" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-success-arrow)"/>
+<path d="M630,150 H680 V72 H735" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-success-arrow)"/>
+<path d="M630,150 H680 V247 H735" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-success-arrow)"/>
+<text x="707" y="60" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="14">Yes</text>
+<text x="707" y="234" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="14">No</text>
+</svg></figure>
+<p>The sequence records first and repeated touchdown speeds, watches gas and timeout limits, and requires floor contact, nearly upright attitude and low linear speed before declaring <code>landed</code>. Touchdown speed includes horizontal motion, not just vertical fall speed. A stage label alone is insufficient: the CLI rejects a run with a failure even if it later reaches the floor.</p>
+<p>This is a PD controller tuned for the supplied profiles, with direct access to simulation state. It has no integral term or sensor estimator. Generic hover control, arbitrary nozzle layouts, disturbed initial conditions and flight-to-ceiling capture require further design and validation.</p>
+<p><strong>Next:</strong> <a href="SIMULATION_DESIGN_SUMMARY.html">model summary</a> → <a href="CONTROL.md">detailed control laws</a> → <a href="PHYSICS.md">parameter assumptions and reference checks</a>.</p>
+<footer>All figures and styles are embedded in this file. No network connection, JavaScript or additional image files are required. Links to detailed documents are optional further reading.</footer></main></body></html>

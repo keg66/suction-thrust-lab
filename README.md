@@ -92,6 +92,13 @@ The Viewer supports its standard camera controls. Closing the window stops the r
 
 ## Physics Models
 
+| Topic | Visual summary (EN) | サマリー（日本語） | Detailed reference |
+|---|---|---|---|
+| Simulation model | [Forces, seals and resources](docs/SIMULATION_DESIGN_SUMMARY.html) | [モデル設計](docs/SIMULATION_DESIGN_SUMMARY.ja.md) | [Model design and integration](docs/SIMULATION_DESIGN.md) |
+| Control | [Maneuver, feedback and jet limits](docs/CONTROL_SUMMARY.html) | [制御則](docs/CONTROL_SUMMARY.ja.md) | [Control laws and allocation](docs/CONTROL.md) |
+
+The English summaries are standalone HTML: download either file and open it in a browser to view all figures offline. The Japanese summaries use Mermaid diagrams within their Markdown files.
+
 All physical inputs use SI units. Body axes are +x forward, +y left and +z up. A nozzle's `direction` is the force on the vehicle; exhaust travels in the opposite direction.
 
 **Suction:** `F = delta_P * A`. A seal is valid only for nearby, correctly oriented surfaces. Flat-surface checks use the skirt corners. Curved examples ray-test the corners and center against the actual course geometry, with a finite flexible-skirt travel assumption. Remote surfaces do not attract the vehicle.
@@ -109,7 +116,7 @@ This is a low-pressure-difference, isothermal approximation, integrated by backw
 
 **Vehicle and control:** inertia is estimated from vehicle dimensions. The basic demos keep mass/inertia fixed, while half-pipe examples update them as gas is consumed. Wheels are separate driven joints only in the half-pipe examples. Scenario-specific position/attitude PD control requests a wrench subject to one-way jets, pressure loss and saturation. Inverted underside jets cannot support gravity: the car falls during the roll and brakes after becoming upright.
 
-See [model assumptions and reference results](docs/PHYSICS.md). These models omit CFD, real-gas behavior, tank cooling, detailed nozzle flow, structural feasibility, and measured component calibration. In particular, the high-pressure full-size preset is an idealized experiment, not a vehicle performance prediction.
+See [model assumptions and reference results](docs/PHYSICS.md) for experimental inputs and regression checks. These models omit CFD, real-gas behavior, tank cooling, detailed nozzle flow, structural feasibility, and measured component calibration. In particular, the high-pressure full-size preset is an idealized experiment, not a vehicle performance prediction.
 
 ## Configuration
 

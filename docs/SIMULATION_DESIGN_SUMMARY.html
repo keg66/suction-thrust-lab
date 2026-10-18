@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'">
+<title>Simulation model design — Suction &amp; Thrust Lab</title><style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#172033;background:#f2f5fa;font-size:16px;line-height:1.75}
+*{box-sizing:border-box}body{margin:0}main{max-width:1110px;margin:32px auto;padding:40px 46px 48px;background:white;border:1px solid #dbe3ee;border-radius:18px}
+.brand{font-size:13px;font-weight:750;letter-spacing:.12em;color:#1d4ed8;text-transform:uppercase}.eyebrow{font-size:13px;color:#64748b;margin:22px 0 4px}h1{font-size:36px;line-height:1.2;letter-spacing:-.03em;margin:0 0 20px}h2{font-size:23px;line-height:1.35;margin:44px 0 14px;letter-spacing:-.015em}p{margin:16px 0}a{color:#1d4ed8;text-underline-offset:3px}code{font-family:ui-monospace,monospace;font-size:.9em;background:#eff3f8;padding:2px 5px;border-radius:4px}strong{font-weight:700}
+figure{margin:22px 0;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;overflow-x:auto}figure svg{display:block;max-width:100%;height:auto;margin:auto}figcaption{font-size:13px;color:#526176;padding:8px 6px 2px;line-height:1.6}.table-wrap{overflow-x:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.6}th,td{border:1px solid #dbe3ee;padding:11px 13px;text-align:left;vertical-align:top}th{background:#f1f5f9}tbody tr:nth-child(even){background:#fafcff}.reading-note{border-left:3px solid #93c5fd;padding-left:14px;color:#526176;font-size:14px}footer{border-top:1px solid #e2e8f0;margin-top:32px;padding-top:16px;color:#64748b;font-size:13px}
+@media(max-width:740px){main{margin:0;padding:26px 18px;border:0;border-radius:0}h1{font-size:29px}h2{font-size:21px}figure svg{min-width:820px}figure{padding:6px}}
+@media print{:root{background:white;font-size:11pt}main{margin:0;padding:0;border:0;max-width:none}h2{break-after:avoid}figure,table{break-inside:avoid}figure{padding:0;border:0}a{color:inherit}footer{font-size:9pt}}
+</style></head><body>
+<main><div class="brand">Suction &amp; Thrust Lab</div><p class="eyebrow">Visual summary · Standalone document</p>
+<p class="reading-note"><a lang="ja" href="SIMULATION_DESIGN_SUMMARY.ja.md">日本語版（Markdown）</a></p>
+<h1>Simulation model design</h1>
+<p>The vehicle moves because the simulator applies forces and integrates motion. The fan changes contact loading, wheels provide traction, and gas jets push and rotate the vehicle. This page explains that structure without the implementation equations; the <a href="SIMULATION_DESIGN.md">detailed model design</a> covers the numerical methods and code.</p>
+<h2>1. What is simulated?</h2>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="1000" height="235" viewBox="0 0 1000 235" role="img" aria-labelledby="flow-model-title"><title id="flow-model-title">Commands create loads; MuJoCo integrates motion and sends state back to control.</title><defs><marker id="flow-model-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker></defs><rect width="1000" height="235" rx="12" fill="#f8fafc"/>
+<rect x="20" y="20" width="220" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="130.0" y="42.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Parameters and</text>
+<text x="130.0" y="62.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">control commands</text>
+<rect x="280" y="20" width="220" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="390.0" y="42.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Fan, jets and</text>
+<text x="390.0" y="62.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">wheel motors</text>
+<rect x="560" y="20" width="220" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="670.0" y="42.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">MuJoCo: gravity,</text>
+<text x="670.0" y="62.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">contact and motion</text>
+<rect x="560" y="145" width="220" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="670.0" y="167.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">New position, attitude</text>
+<text x="670.0" y="187.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">and velocity</text>
+<rect x="280" y="145" width="220" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="390.0" y="177.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Controller feedback</text>
+<rect x="810" y="145" width="170" height="65" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="895.0" y="177.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Viewer and CSV</text>
+<path d="M240,52 H280" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-model-arrow)"/>
+<path d="M500,52 H560" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-model-arrow)"/>
+<path d="M670,85 V145" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-model-arrow)"/>
+<path d="M560,177 H500" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-model-arrow)"/>
+<path d="M390,145 V85" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-model-arrow)"/>
+<path d="M780,177 H810" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-model-arrow)"/>
+</svg></figure>
+<p>MuJoCo calculates where the vehicle goes next. The custom Python code calculates fan pressure, gas use and applied loads. A target position is a request for the controller, not a position assigned to the vehicle.</p>
+<p>The basic examples have a freely moving body with fixed wheel shapes. The half-pipe examples add four rotating, independently driven wheels. The decorative body, track edges and landing marker do not create extra forces.</p>
+<h2>2. Suction presses the tires onto a nearby surface</h2>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="1200" height="385" viewBox="0 0 1200 385" role="img" aria-labelledby="title desc"><title id="title">How suction changes contact forces</title><desc id="desc">Three static force-balance schematics: floor normal equals weight plus suction; ceiling normal equals suction minus weight; wall friction supports weight while suction loads the tires.</desc><defs><marker id="suction" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#2563eb"/></marker><marker id="normal" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#15803d"/></marker><marker id="gravity" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#475569"/></marker><marker id="friction" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#c2410c"/></marker></defs><style>text{font-family:DejaVu Sans,sans-serif;fill:#0f172a}.small{font-size:14px}.note{font-size:16px}.heading{font-size:21px;font-weight:bold}</style><rect width="1200" height="385" fill="#f8fafc"/>
+<rect x="12" y="12" width="384" height="337" rx="12" fill="white" stroke="#cbd5e1"/>
+<text x="204" y="47" class="heading" text-anchor="middle">Floor: extra tire load</text>
+<rect x="408" y="12" width="384" height="337" rx="12" fill="white" stroke="#cbd5e1"/>
+<text x="600" y="47" class="heading" text-anchor="middle">Ceiling: hold against weight</text>
+<rect x="804" y="12" width="384" height="337" rx="12" fill="white" stroke="#cbd5e1"/>
+<text x="996" y="47" class="heading" text-anchor="middle">Wall: friction supports weight</text>
+<path d="M35,215 H375 M430,110 H770 M1134,72 V286" stroke="#94a3b8" stroke-width="9"/>
+<g transform="translate(198 185) rotate(0)"><rect x="-59" y="-14" width="118" height="28" rx="8" fill="#cbd5e1" stroke="#334155" stroke-width="2"/><rect x="-22" y="-25" width="44" height="12" rx="5" fill="#bae6fd" stroke="#334155"/><circle cx="-39" cy="20" r="9" fill="#334155"/><circle cx="39" cy="20" r="9" fill="#334155"/></g>
+<path d="M235,171 L235,91" fill="none" stroke="#15803d" stroke-width="4" marker-end="url(#normal)"/>
+<text x="247" y="107" class="note" text-anchor="start" style="fill:#15803d">N</text>
+<path d="M155,199 L155,276" fill="none" stroke="#475569" stroke-width="4" marker-end="url(#gravity)"/>
+<text x="116" y="274" class="note" text-anchor="start" style="fill:#475569">mg</text>
+<path d="M245,199 L245,269" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+<text x="258" y="267" class="note" text-anchor="start" style="fill:#2563eb">F_s</text>
+<text x="204" y="319" class="heading" text-anchor="middle">N = mg + F_s</text>
+<g transform="translate(594 140) rotate(180)"><rect x="-59" y="-14" width="118" height="28" rx="8" fill="#cbd5e1" stroke="#334155" stroke-width="2"/><rect x="-22" y="-25" width="44" height="12" rx="5" fill="#bae6fd" stroke="#334155"/><circle cx="-39" cy="20" r="9" fill="#334155"/><circle cx="39" cy="20" r="9" fill="#334155"/></g>
+<path d="M542,126 L542,66" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+<text x="499" y="82" class="note" text-anchor="start" style="fill:#2563eb">F_s</text>
+<path d="M595,154 L595,257" fill="none" stroke="#475569" stroke-width="4" marker-end="url(#gravity)"/>
+<text x="608" y="256" class="note" text-anchor="start" style="fill:#475569">mg</text>
+<path d="M635,119 L635,215" fill="none" stroke="#15803d" stroke-width="4" marker-end="url(#normal)"/>
+<text x="648" y="211" class="note" text-anchor="start" style="fill:#15803d">N</text>
+<text x="600" y="304" class="heading" text-anchor="middle">N = F_s - mg</text>
+<text x="600" y="329" class="small" text-anchor="middle">Positive contact load needs F_s &gt; mg</text>
+<g transform="translate(1104 174) rotate(-90)"><rect x="-59" y="-14" width="118" height="28" rx="8" fill="#cbd5e1" stroke="#334155" stroke-width="2"/><rect x="-22" y="-25" width="44" height="12" rx="5" fill="#bae6fd" stroke="#334155"/><circle cx="-39" cy="20" r="9" fill="#334155"/><circle cx="39" cy="20" r="9" fill="#334155"/></g>
+<path d="M1104,150 L1104,81" fill="none" stroke="#c2410c" stroke-width="4" marker-end="url(#friction)"/>
+<text x="1045" y="81" class="note" text-anchor="start" style="fill:#c2410c">F_t</text>
+<path d="M1085,153 L994,153" fill="none" stroke="#15803d" stroke-width="4" marker-end="url(#normal)"/>
+<text x="1000" y="140" class="note" text-anchor="start" style="fill:#15803d">N</text>
+<path d="M1107,178 L1182,178" fill="none" stroke="#2563eb" stroke-width="4" marker-end="url(#suction)"/>
+<text x="1157" y="161" class="note" text-anchor="start" style="fill:#2563eb">F_s</text>
+<path d="M1069,204 L1069,273" fill="none" stroke="#475569" stroke-width="4" marker-end="url(#gravity)"/>
+<text x="1082" y="272" class="note" text-anchor="start" style="fill:#475569">mg</text>
+<text x="996" y="305" class="heading" text-anchor="middle">F_t = mg, with F_t ≤ μN</text>
+<text x="996" y="329" class="small" text-anchor="middle">Suction presses; tire friction holds</text>
+<text x="600" y="374" class="small" text-anchor="middle">Static force-balance sketches. Arrows are forces on the vehicle, not to scale. F_s = suction; N = contact normal.</text>
+</svg>
+<figcaption>Static force balance on a floor, under a ceiling, and on a wall. Suction increases floor loading, must exceed weight for ceiling contact, and provides the normal loading needed for wall friction.</figcaption></figure>
+<p>The fan removes air from a small volume under the skirt. Lower pressure there creates an attraction toward the surface:</p>
+<p><strong>Suction force = pressure difference × effective area.</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Surface</th><th>What the force does</th></tr></thead><tbody><tr><td>Floor</td><td>Adds to the vehicle&#x27;s weight and increases tire loading</td></tr><tr><td>Ceiling</td><td>Pulls upward; suction must exceed weight to maintain a positive contact load</td></tr><tr><td>Wall</td><td>Presses the tires against the wall; tire friction/drive must support weight along it</td></tr></tbody></table></div>
+<p>For the basic 120 g vehicle and 0.01 m² area, about <strong>118 Pa</strong> balances weight alone. It is a useful force check, not a complete climbing or ceiling-retention design.</p>
+<p>The wall sketch explains the force balance, not an implemented wall-driving demonstration. Current flat-ceiling behavior is initialized attachment and release; generic wall/ceiling driving is still planned.</p>
+<h2>3. A fan only works with a usable seal</h2>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="1000" height="340" viewBox="0 0 1000 340" role="img" aria-labelledby="flow-seal-title"><title id="flow-seal-title">A valid nearby seal permits pressure to build; an invalid seal vents pressure and gives zero suction.</title><defs><marker id="flow-seal-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker></defs><rect width="1000" height="340" rx="12" fill="#f8fafc"/>
+<polygon points="500,12.0 705.0,58 500,104.0 295.0,58" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="500" y="48" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="15">Nearby surface, correct orientation,</text>
+<text x="500" y="68" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="15">and skirt can reach?</text>
+<rect x="35" y="155" width="285" height="70" rx="10" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
+<text x="177.5" y="180.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">No seal: vent pressure</text>
+<text x="177.5" y="200.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">and set suction to zero</text>
+<rect x="390" y="155" width="220" height="70" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="500.0" y="180.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Fan removes air;</text>
+<text x="500.0" y="200.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">gaps let air in</text>
+<rect x="710" y="155" width="255" height="70" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+<text x="837.5" y="180.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Pressure difference</text>
+<text x="837.5" y="200.0" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">evolves over time</text>
+<rect x="710" y="265" width="255" height="55" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+<text x="837.5" y="292.5" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="16">Attract toward surface</text>
+<path d="M500,104 V126 H177 V155" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-seal-arrow)"/>
+<path d="M500,104 V155" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-seal-arrow)"/>
+<path d="M610,190 H710" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-seal-arrow)"/>
+<path d="M837,225 V265" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#flow-seal-arrow)"/>
+<text x="300" y="115" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="14">No</text>
+<text x="526" y="133" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="DejaVu Sans,sans-serif" font-size="14">Yes</text>
+</svg></figure>
+<p>A large gap lets more air in. A fan&#x27;s flow also falls as pressure difference rises: maximum flow and maximum pressure cannot be delivered together. The model includes this pressure–flow tradeoff, fan startup delay and finite battery use.</p>
+<p>Flat surfaces are checked at all four skirt corners. The curved course uses rays at the corners and center; losing a required hit breaks the seal. Within the curved skirt&#x27;s allowed travel, the current model assumes a constant residual leak. It does not gradually model skirt deformation. A distant wall or ceiling never attracts the vehicle.</p>
+<h2>4. Jets use finite gas and can also rotate the body</h2>
+<p><strong>Thrust = gas mass flow × effective exhaust velocity.</strong></p>
+<p>A jet pushes opposite its exhaust direction. If its force acts away from the chassis center, it also creates a turning moment. The simulator applies force at the actual configured nozzle location, allowing MuJoCo to calculate the resulting motion.</p>
+<p>All jets share a finite tank. Using gas lowers pressure and available thrust; no usable gas means no thrust. The half-pipe profiles also reduce vehicle mass/inertia as gas is consumed. Basic examples keep their mass fixed as a simpler approximation.</p>
+<p>Battery use, gas use and exhaust kinetic energy are logged. They are useful resource indicators, not a complete thermodynamic or electrical model.</p>
+<h2>5. How to interpret the result</h2>
+<div class="table-wrap"><table><thead><tr><th>Implemented approximation</th><th>What it does not establish</th></tr></thead><tbody><tr><td>Primitive collision shapes and estimated inertia</td><td>Accurate dynamics of a manufactured vehicle</td></tr><tr><td>Lumped pressure, leakage and fan curve</td><td>Detailed flow around a real skirt</td></tr><tr><td>Constant-temperature ideal gas and effective exhaust velocity</td><td>Real high-pressure tank/nozzle performance</td></tr><tr><td>Contact/friction and driven wheels</td><td>Measured tire or suspension behavior</td></tr><tr><td>Miniature and experimental full-size presets</td><td>A controlled scale-only comparison or practical full-size feasibility</td></tr></tbody></table></div>
+<p>The full-size profile uses separately assumed hardware and control settings. In particular, its high tank pressure needs real-gas and thermal validation. A completed trajectory shows what the mathematical model can do under those assumptions.</p>
+<p><strong>Next:</strong> <a href="CONTROL_SUMMARY.html">control summary</a> → <a href="SIMULATION_DESIGN.md">detailed model design</a> → <a href="PHYSICS.md">parameter assumptions and reference checks</a>.</p>
+<footer>All figures and styles are embedded in this file. No network connection, JavaScript or additional image files are required. Links to detailed documents are optional further reading.</footer></main></body></html>

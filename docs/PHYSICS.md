@@ -1,5 +1,9 @@
 # Model assumptions and reference results
 
+Start with the visual [model summary](SIMULATION_DESIGN_SUMMARY.html) and [control summary](CONTROL_SUMMARY.html) for an overview.
+
+For the implementation structure, force application and integration order, see [Simulation model design](SIMULATION_DESIGN.md). For feedback equations, state transitions and nozzle allocation, see [Control laws](CONTROL.md).
+
 ## Miniature profiles
 
 The basic vehicle is 0.147 × 0.090 × 0.041 m with a fixed 0.120 kg body and box-estimated inertia. Its four wheel shapes are fixed to the body. In the basic experiments the initial gas is considered included in that fixed mass; gas loss does not reduce body mass, a deliberate approximation.
