@@ -142,7 +142,7 @@
     "drive_speed": 2.6663618873449484,
     "skirt_travel": 0.18514285714285714
   },
-  "vehicle": "roadster",
+  "vehicle": "full_size",
   "wheel_mass": 20.0,
   "scaling": {
     "length": 30.857142857142858,

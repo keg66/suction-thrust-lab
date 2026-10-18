@@ -1,14 +1,14 @@
-"""Full-size conditions and scale-independent gravity, not Tesla performance claims."""
+"""Full-size conditions and scale-independent gravity, experimental parameters only."""
 import mujoco
 import numpy as np
 import pytest
 from suction_thrust_lab.halfpipe import HalfpipeSimulation
-from suction_thrust_lab.roadster import RoadsterSimulation, roadster_config
+from suction_thrust_lab.full_size import FullSizeSimulation, full_size_config
 
 
 @pytest.fixture(scope='module')
-def roadster_run():
-    s=RoadsterSimulation()
+def full_size_run():
+    s=FullSizeSimulation()
     stages=[]
     min_clearance=float('inf')
     for i in range(35000):
@@ -20,8 +20,8 @@ def roadster_run():
     return s,stages,min_clearance
 
 
-def test_full_size_continuous_roll_and_landing(roadster_run):
-    s,stages,minimum=roadster_run
+def test_full_size_continuous_roll_and_landing(full_size_run):
+    s,stages,minimum=full_size_run
     assert stages==['climb','depart','flip','recover','descend','landed']
     assert not s.failure
     assert 0<s.landing_speed<.5
@@ -33,8 +33,8 @@ def test_full_size_continuous_roll_and_landing(roadster_run):
     assert np.linalg.norm(s.data.qvel[:6])<.03
 
 
-def test_full_size_finite_resource_and_mass_accounting(roadster_run):
-    s,_,_=roadster_run
+def test_full_size_finite_resource_and_mass_accounting(full_size_run):
+    s,_,_=full_size_run
     assert 400<s.gas.used<470
     assert s.gas.mass>s.gas.residual_mass
     assert s.model.body_mass.sum()==pytest.approx(s.total_mass)
@@ -45,7 +45,7 @@ def test_full_size_finite_resource_and_mass_accounting(roadster_run):
 
 
 def test_real_dimensions_nozzle_positions_and_rank():
-    s=RoadsterSimulation()
+    s=FullSizeSimulation()
     np.testing.assert_allclose(s.c['dimensions'],[4.536,1.971,1.26])
     assert s.model.body_mass.sum()==pytest.approx(2082.720225,rel=1e-8)
     assert len(s.c['thrusters'])==7
@@ -58,7 +58,7 @@ def test_real_dimensions_nozzle_positions_and_rank():
 
 def test_free_fall_does_not_depend_on_vehicle_mass_or_size():
     drops=[]
-    for s in [HalfpipeSimulation(),RoadsterSimulation()]:
+    for s in [HalfpipeSimulation(),FullSizeSimulation()]:
         s.data.qpos[:3]=[-30,0,40]
         mujoco.mj_forward(s.model,s.data)
         for _ in range(250):s.step()

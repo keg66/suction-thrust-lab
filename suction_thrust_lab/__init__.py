@@ -1,1 +1,1 @@
-"""Physical experiments for Suction & Thrust Lab (SI units)."""
+"""Suction & Thrust Lab: vehicle physics experiments in SI units."""

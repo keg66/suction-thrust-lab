@@ -17,15 +17,15 @@ def main():
     out=Path(__file__).resolve().parents[1]/'output'/'videos'
     out.mkdir(parents=True,exist_ok=True)
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--demo',choices=['halfpipe','roadster'],default='halfpipe')
+    parser.add_argument('--demo',choices=['halfpipe','full_size'],default='halfpipe')
     args=parser.parse_args()
-    if args.demo=='roadster':
-        from suction_thrust_lab.roadster import RoadsterSimulation
-        s=RoadsterSimulation()
+    if args.demo=='full_size':
+        from suction_thrust_lab.full_size import FullSizeSimulation
+        s=FullSizeSimulation()
     else:
         s=HalfpipeSimulation()
-    full_size=args.demo=='roadster'
-    prefix='roadster' if full_size else 'halfpipe-roll'
+    full_size=args.demo=='full_size'
+    prefix='full_size' if full_size else 'halfpipe-roll'
     duration=40 if full_size else 24
     fps,width,height=30 if full_size else 60,960,720
     L=s.length_scale

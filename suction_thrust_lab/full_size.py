@@ -1,4 +1,4 @@
-"""Full-size experimental profile; assumed propulsion, not a Tesla specification."""
+"""Full-size experimental profile; assumed propulsion, not a production-vehicle specification."""
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import numpy as np
@@ -7,22 +7,22 @@ from .halfpipe import HalfpipeSimulation, demo_config, ramp_xml
 from .simulation import load_config
 
 
-def roadster_config():
-    return load_config(Path(__file__).with_name('roadster.json'))
+def full_size_config():
+    return load_config(Path(__file__).with_name('full_size.json'))
 
 
 def _numbers(value, scales):
     return ' '.join(map(str,np.fromstring(value,sep=' ')*scales))
 
 
-def roadster_xml(c):
+def full_size_xml(c):
     base=demo_config()
     L,T,Q=(c['scaling'][key] for key in ['length','time','torque'])
     base['ramp']['radius']=c['ramp']['radius']/L
     base['ramp']['segments']=c['ramp']['segments']
     root=ET.fromstring(ramp_xml(base))
     shape=np.array(c['dimensions'])/np.array(base['dimensions'])
-    root.set('model','Roadster-scale experiment')
+    root.set('model','Suction & Thrust Lab / Full-size vehicle')
     root.find('option').set('timestep',str(c['timestep']))
     root.find('option').set('gravity',f"0 0 -{c['gravity']}")
     defaults=root.find('default/geom')
@@ -65,7 +65,7 @@ def roadster_xml(c):
     return ET.tostring(root,encoding='unicode')
 
 
-class RoadsterSimulation(HalfpipeSimulation):
+class FullSizeSimulation(HalfpipeSimulation):
     def __init__(self,config=None):
-        c=config or roadster_config()
-        super().__init__(c,xml=roadster_xml(c))
+        c=config or full_size_config()
+        super().__init__(c,xml=full_size_xml(c))
