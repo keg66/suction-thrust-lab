@@ -47,6 +47,12 @@ Suction & Thrust Labは、MuJoCoを使ってファンによる吸引、コール
 | `lift` | 0.3秒間の噴射で上昇し、その後落下 | 3秒 |
 | `halfpipe` | 小型車両の駆動登坂、端からの離脱、180度ロール、回復、着地 | 24秒 |
 | `full_size` | 別途仮定した機器を持つ実車サイズの車両で同じ動作を実行 | 40秒 |
+| `tornado` | ミニ四駆サイズで5 m/sまで加速、浮上、前進しながら3秒間で14回転ロール、水平に戻ってすぐ走行着地 | 6秒 |
+| `tornado_full_size` | 実車サイズで6台をごぼう抜き。3秒間で6回転し、着地後も先頭を走行 | 6秒 |
+
+`tornado`は全長147 mmの車体と既存の7基のスラスタを使います。5 m/sはこのデモで設定した車輪の最高速度で、実製品の性能を表す値ではありません。浮上開始から約0.075秒で回転を始め、回転終了から約0.27秒で着地します。前後にホバリングする段階はありません。約3秒で14回転し、回転中は姿勢に合わせて底面スラスタを噴射し、飛行を続けます。先行する6台を回転中に追い抜き、着地後も最高速で走って先頭を保ちます。他車は3 m/sで走る演出用のマシンで、衝突判定から除外しています。CSVの`race_position`は順位、`overtaken`は車体全体が抜けた台数です。CSVの`touchdown_speed_m_s`は鉛直速度、`touchdown_forward_speed_m_s`は前進速度、`roll_total_deg`は累積ロール角です。設定は`tornado.py`の`demo_config()`にあり、`--config`のJSONに`tornado`オブジェクトを追加して変更できます。
+
+`tornado_full_size`は全長4.536 m、乾燥重量1600 kgの既存実車モデルと7基のスラスタを使います。約216 km/hで走行中の状態から始まり、約108 km/hの先行車6台を回転中に追い抜きます。回転開始までの浮上は約0.15秒、回転終了から着地までは約0.30秒です。3秒間で6回転する制御に調整し、実車プロファイルの推力上限と有限のガス量を適用しています。設定は`tornado_full_size.py`の`tornado_full_size_config()`にあります。
 
 天井デモは、車体を反転させ、ファンがすでに回転している状態から始めます。初期の圧力差はゼロです。`--cold-fan`では、ファンの起動中にシールを失う例を確認できます。`lift`は短時間の噴射による浮上であり、ホバリング制御ではありません。
 
@@ -58,6 +64,8 @@ Suction & Thrust Labは、MuJoCoを使ってファンによる吸引、コール
 MUJOCO_GL=egl python scripts/record_demos.py
 MUJOCO_GL=egl python scripts/record_halfpipe.py --demo halfpipe
 MUJOCO_GL=egl python scripts/record_halfpipe.py --demo full_size
+MUJOCO_GL=egl python scripts/record_tornado.py
+MUJOCO_GL=egl python scripts/record_tornado.py --demo tornado_full_size
 python scripts/make_readme_gifs.py
 ```
 
@@ -100,6 +108,8 @@ python -m suction_thrust_lab --demo ceiling --headless
 python -m suction_thrust_lab --demo lift --headless
 python -m suction_thrust_lab --demo halfpipe --headless
 python -m suction_thrust_lab --demo full_size --headless
+python -m suction_thrust_lab --demo tornado --headless
+python -m suction_thrust_lab --demo tornado_full_size --headless
 python -m pytest -q
 ```
 

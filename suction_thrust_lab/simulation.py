@@ -82,9 +82,13 @@ class Simulation:
         point = self.data.xpos[self.car] + rotation @ np.asarray(local_point)
         mujoco.mj_applyFT(self.model, self.data, np.asarray(force), np.zeros(3), point, self.car, self.data.qfrc_applied)
 
+    def apply_environment_forces(self):
+        """Scenario-specific external forces, applied before integration."""
+
     def step(self, fan=0., commands=None):
         dt = self.model.opt.timestep
         self.data.qfrc_applied[:] = 0
+        self.apply_environment_forces()
         self.surface, self.gap, direction = self.seal()
         force = self.suction.step(dt, fan, self.gap)
         self.apply_force(direction * force, [0, 0, self.c['suction']['bottom_z']])

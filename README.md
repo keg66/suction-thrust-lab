@@ -47,6 +47,12 @@ The full-size hardware and control parameters are experimental assumptions, not 
 | `lift` | Rise under a 0.3 s thrust pulse, then fall | 3 s |
 | `halfpipe` | Miniature vehicle: driven climb, edge departure, roll-180, recovery and landing | 24 s |
 | `full_size` | The same sequence with an experimental full-size vehicle and separately assumed hardware | 40 s |
+| `tornado` | Miniature: accelerate to 5 m/s, lift, 14 forward-moving rolls over 3 seconds and immediate rolling touchdown | 6 s |
+| `tornado_full_size` | Full-size rolling race start, six overtakes, six rolls in 3 s and immediate rolling touchdown in the lead | 6 s |
+
+`tornado` uses the 147 mm chassis and existing seven jets. Its configured wheel top speed of 5 m/s is a demo assumption, not a real product specification. Roll begins about 0.075 s after lift starts, and touchdown follows about 0.27 s after the last turn, without a hover stage. It performs 14 rolls in about 3 s, uses timed underside thrust during rotation to sustain flight, overtakes six pace cars during the roll, then keeps driving at top speed after touchdown to hold the lead. Rivals follow scripted 3 m/s motion and are excluded from collisions. CSV `race_position` reports rank and `overtaken` counts fully cleared cars. CSV `touchdown_speed_m_s` measures vertical speed; `touchdown_forward_speed_m_s` records forward speed and `roll_total_deg` records cumulative roll. Defaults live in `tornado.py` (`demo_config()`); a `tornado` object in a `--config` JSON overrides them.
+
+`tornado_full_size` uses the existing 4.536 m, 1600 kg dry-mass full-size chassis and seven jets. It begins already driving at 60 m/s (216 km/h), overtakes six 30 m/s pace cars during a three-second, six-turn roll, and keeps the lead after touchdown. Lift entry takes about 0.15 s and touchdown follows the last turn by about 0.30 s. The existing experimental full-size thrust limits and finite gas supply remain in effect. Defaults live in `tornado_full_size.py` (`tornado_full_size_config()`).
 
 The ceiling example begins inverted with the fan already spinning and zero initial pressure difference. `--cold-fan` demonstrates failure to seal during startup. The lift pulse is not a hover controller. Half-pipe flight uses four underside jets, two front lateral jets and one rear jet. There are no top-mounted jets in those examples. Their instantaneous wrench matrix has rank five; lateral force and yaw torque are coupled.
 
@@ -56,6 +62,8 @@ Full-resolution MP4 recordings are generated locally under `output/videos/suctio
 MUJOCO_GL=egl python scripts/record_demos.py
 MUJOCO_GL=egl python scripts/record_halfpipe.py --demo halfpipe
 MUJOCO_GL=egl python scripts/record_halfpipe.py --demo full_size
+MUJOCO_GL=egl python scripts/record_tornado.py
+MUJOCO_GL=egl python scripts/record_tornado.py --demo tornado_full_size
 python scripts/make_readme_gifs.py
 ```
 
@@ -96,6 +104,8 @@ python -m suction_thrust_lab --demo ceiling --headless
 python -m suction_thrust_lab --demo lift --headless
 python -m suction_thrust_lab --demo halfpipe --headless
 python -m suction_thrust_lab --demo full_size --headless
+python -m suction_thrust_lab --demo tornado --headless
+python -m suction_thrust_lab --demo tornado_full_size --headless
 python -m pytest -q
 ```
 
